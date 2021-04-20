@@ -16,7 +16,7 @@ tStart = tic;
 % noise_snr_LNL = [];
 % output_noise_power = [];
 %figNum = 850;
-Fs = 1000;
+Fs = 1000; 
 Nfft = 10000;
 
 EMG_response_model = NHK2;
