@@ -5,6 +5,8 @@ clear all
 
 tStart = tic;
 
+%git test
+
 %%
 %Set initial Parameters
 %set_output_noise_power = 1e-10;   %Output Noise Power
@@ -13,14 +15,14 @@ set_output_noise_power = 0;
 accuracy = [];
 noise_snr = [];
 output_noise_power = [];
-figNum = 10;
+figNum = 1;
 
 %For Power Spectrums
 Fs = 1000; 
 Nfft = 10000;
 
 %Desired Displacement Signal Type (Simple, PRBS or Physiologically Based)
-simple_movement = true;
+simple_movement = false;
 PRBS_movement = true;
 %physiological_movement = true;
 
