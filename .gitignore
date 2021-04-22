@@ -1,4 +1,5 @@
 slprj
+*.asv
 
 EMG_simulation_simulink.slx.original
 EMG_simulation_simulink.slxc
