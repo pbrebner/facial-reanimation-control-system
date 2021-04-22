@@ -18,12 +18,11 @@ clear all
 
 tStart = tic;
 
-%%
-%Set initial Parameters
-noise_level_iters = 18;
-set_output_noise_initial = 1e-15;        %Output Noise Power
+%% Set initial Parameters
+noise_level_iters = 18;                             %Number of times the noise power is multiplied
+set_output_noise_initial = 1e-15;                   %Initial Output Noise Power
 set_output_noise_power = set_output_noise_initial;
-noise_multiplier = 5;
+noise_multiplier = 5;                               %Noise Power Multiplier
 set_seed = 23341;
 
 %For Power Spectrums or FFT
@@ -34,16 +33,16 @@ Nfft = 10000;
 PRBS_movement_time = 180;
 variable_amplitude = false;
 N = PRBS_movement_time/10;
-M = 1000;
+M = 10000;
 PRBS_amplitude = 10; %mm
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_movement_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                  
-nf = 18;                  %number of random signal changes
+nf = 18;                                        %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 

@@ -25,7 +25,7 @@ set_seed = 23341;
 
 %For Power Spectrums or FFT
 Fs = 1000; 
-Nfft = 1000;
+Nfft = 10000;
 
 %PRBS Stimulus
 PRBS_movement_time = 180;
