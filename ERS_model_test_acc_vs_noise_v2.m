@@ -24,11 +24,7 @@ set_output_noise_power = set_output_noise_initial;  %Noise power passed into ERS
 noise_multiplier = 5;                               %Noise Power Multiplier
 set_seed = 23341;
 
-%For Power Spectrums or FFT
-Fs = 1000; 
-Nfft = 10000;
-
-%PRBS Stimulus
+%PRBS Signal Parameters
 PRBS_movement_time = 180;
 variable_amplitude = false;
 N = PRBS_movement_time/10;
@@ -305,10 +301,6 @@ end
 
 set_output_noise_power_validation = 0;
 
-%For Power Spectrums
-Fs = 1000; 
-Nfft = 1000;
-
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_movement_max_amplitude = 0.01;
@@ -434,24 +426,24 @@ for trial = 1:num_trials
     
 end
 
-%% Plot Accuracy (Identification & Validation) vs Noise
-figNum = 8000;
+%% Plot Accuracy (Identification & Validation) vs Output Noise
+figNum = 10000;
 
 accuracy_identification_all = max(0, accuracy_identification_all);
 
-figure(figNum)
-figNum = figNum+1;
-plot(noise_snr_all(2,:),accuracy_identification_all(2,:),'LineWidth',3);
-hold on
-plot(noise_snr_all(1,:),accuracy_identification_all(1,:),'LineWidth',3);
-hold off
-ax = gca;
-ax.FontSize = 15;
-title('Identification Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
-ylabel('Accuracy (% VAF)','Fontsize',18); 
-xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
-grid on
+% figure(figNum)
+% figNum = figNum+1;
+% plot(noise_snr_all(2,:),accuracy_identification_all(2,:),'LineWidth',3);
+% hold on
+% plot(noise_snr_all(1,:),accuracy_identification_all(1,:),'LineWidth',3);
+% hold off
+% ax = gca;
+% ax.FontSize = 15;
+% title('Identification Accuracy vs Output Noise','Fontsize',24);
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% ylabel('Accuracy (% VAF)','Fontsize',18); 
+% xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
+% grid on
 
 figure(figNum)
 figNum = figNum+1;
@@ -471,41 +463,41 @@ accuracy_validation = max(0, accuracy_validation);
 accuracy_validation_mean = mean(accuracy_validation);
 accuracy_validation_std = std(accuracy_validation);
 
+% figure(figNum)
+% figNum = figNum+1;
+% hold on
+% plot(noise_snr_all(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
+% plot(noise_snr_all(1,:),accuracy_validation_mean(:,:,1),'LineWidth',3);
+% 
+% plot(noise_snr_all(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
+% plot(noise_snr_all(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
+% patch([noise_snr_all(2,:) fliplr(noise_snr_all(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
+% 
+% plot(noise_snr_all(1,:),min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
+% plot(noise_snr_all(1,:),max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
+% patch([noise_snr_all(1,:) fliplr(noise_snr_all(1,:))], [min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100) fliplr(max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
+% hold off
+% ax = gca;
+% ax.FontSize = 15;
+% title('Validation Accuracy vs Output Noise','Fontsize',24);
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% ylabel('Accuracy (% VAF)','Fontsize',18); 
+% xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
+% grid on
+
 figure(figNum)
 figNum = figNum+1;
 hold on
-plot(noise_snr_all(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
-plot(noise_snr_all(1,:),accuracy_validation_mean(:,:,1),'LineWidth',3);
+plot(noise_snr_all_clean(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
+plot(noise_snr_all_clean(1,:),accuracy_validation_mean(:,:,1),'LineWidth',3);
 
-plot(noise_snr_all(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
-plot(noise_snr_all(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
-patch([noise_snr_all(2,:) fliplr(noise_snr_all(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
+plot(noise_snr_all_clean(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
+plot(noise_snr_all_clean(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
+patch([noise_snr_all_clean(2,:) fliplr(noise_snr_all_clean(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
 
-plot(noise_snr_all(1,:),min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
-plot(noise_snr_all(1,:),max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
-patch([noise_snr_all(1,:) fliplr(noise_snr_all(1,:))], [min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100) fliplr(max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
-hold off
-ax = gca;
-ax.FontSize = 15;
-title('Validation Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
-ylabel('Accuracy (% VAF)','Fontsize',18); 
-xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
-grid on
-
-figure(figNum)
-figNum = figNum+1;
-hold on
-plot(noise_snr_all_clean(2,[1:6 8:end]),accuracy_validation_mean(:,[1:6 8:end],2),'LineWidth',3);
-plot(noise_snr_all_clean(1,[1:10 12:end]),accuracy_validation_mean(:,[1:10 12:end],1),'LineWidth',3);
-
-plot(noise_snr_all_clean(2,[1:6 8:end]),min(accuracy_validation_mean(:,[1:6 8:end],2)+accuracy_validation_std(:,[1:6 8:end],2),100),'LineStyle','none','LineWidth',2)
-plot(noise_snr_all_clean(2,[1:6 8:end]),max(accuracy_validation_mean(:,[1:6 8:end],2)-accuracy_validation_std(:,[1:6 8:end],2),0),'LineStyle','none','LineWidth',2)
-patch([noise_snr_all_clean(2,[1:6 8:end]) fliplr(noise_snr_all_clean(2,[1:6 8:end]))], [min(accuracy_validation_mean(:,[1:6 8:end],2)+accuracy_validation_std(:,[1:6 8:end],2),100) fliplr(max(accuracy_validation_mean(:,[1:6 8:end],2)-accuracy_validation_std(:,[1:6 8:end],2),0))], 'b','FaceAlpha',0.2)
-
-plot(noise_snr_all_clean(1,[1:10 12:end]),min(accuracy_validation_mean(:,[1:10 12:end],1)+accuracy_validation_std(:,[1:10 12:end],1),100),'LineStyle','none','LineWidth',2)
-plot(noise_snr_all_clean(1,[1:10 12:end]),max(accuracy_validation_mean(:,[1:10 12:end],1)-accuracy_validation_std(:,[1:10 12:end],1),0),'LineStyle','none','LineWidth',2)
-patch([noise_snr_all_clean(1,[1:10 12:end]) fliplr(noise_snr_all_clean(1,[1:10 12:end]))], [min(accuracy_validation_mean(:,[1:10 12:end],1)+accuracy_validation_std(:,[1:10 12:end],1),100) fliplr(max(accuracy_validation_mean(:,[1:10 12:end],1)-accuracy_validation_std(:,[1:10 12:end],1),0))], 'y','FaceAlpha',0.2)
+plot(noise_snr_all_clean(1,:),min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
+plot(noise_snr_all_clean(1,:),max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
+patch([noise_snr_all_clean(1,:) fliplr(noise_snr_all_clean(1,:))], [min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100) fliplr(max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
 hold off
 ax = gca;
 ax.FontSize = 15;
