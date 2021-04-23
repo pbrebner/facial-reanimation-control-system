@@ -1,8 +1,4 @@
-%EMG Model Test
-
-%Validate the estimated model by using it to predict the movements
-%generated in response to an input realization which is different than that
-%used to identify the model
+%% ERS Model Test for Number of Movement Pulses of "Physiological" Movement
 
 %Tests the Model based on the number of pulses of the Physiological Input
 
@@ -14,38 +10,31 @@ clear all
 
 tStart = tic;
 
-%%
-%Set initial Parameters
+%% Set initial Parameters
 set_output_noise_power = 0;
-%noise_multiplier = 10;
 noise_snr = [];
 output_noise_power = [];
-% figNum = 1;
 
-%For Power Spectrums
-Fs = 1000; 
-Nfft = 1000;
-
-%Desired Displacement Signal Type (Simple, PRBS or Physiologically Based)
+%Desired Displacement Signal Type (Simple, PRBS or "Physiological")
 % simple_movement = false;
 % PRBS_movement = true;
 %physiological_movement = true;
 
-%Signal Amplitude (PRBS Signal)
+%PRBS Signal Parameters
 % PRBS_movement_time = 180;
 % variable_amplitude = false;
-% N = 18;                     %Number of times the amplitude randomly changes (For Variable Amplitude Only)
-% M = 10000;                  %Number of each random value (For Variable Amplitude Only)
-% PRBS_amplitude = 10;             %Amplitude (For Constant Amplitude Only)
+% N = 18;                           %Number of times the amplitude randomly changes (For Variable Amplitude Only)
+% M = 10000;                        %Number of each random value (For Variable Amplitude Only)
+% PRBS_amplitude = 10;              %Amplitude (For Constant Amplitude Only)
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_movement_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz) (Max is 1.8 Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
-W = 0.55;                  
-nf = 18;                  %number of random signal changes
-t_interval = physiological_movement_time/nf;    %Length of random interval (s)
+fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
+W = 0.55;                                       %Width of signal pulse (seconds)
+nf = physiological_movement_time/10;            %Number of random signal changes
+t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 NHK_all_temp = [];
@@ -56,8 +45,9 @@ Zcur_all = [];
 identification_accuracy = [];
 validation_accuracy = [];
 
-%%
-use_fr = false; %Use frequency instead of number of pulses for Physiological Input
+%% Set Number of Movement Pulses
+
+use_fr = false;         %Use frequency instead of number of pulses for Physiological Input
 if use_fr == true
     fr = 0:0.1:0.3;
     sig = 0.6;
@@ -77,7 +67,8 @@ end
 validation_frequency = [];
 validation_pulses_total = [];
 
-%%
+%% Generate the Desired Displacement Signals for Model Identification
+
 for trial = 1:num_trials_ident
     
     for model = 1:num_models_for_ident
@@ -95,28 +86,12 @@ for trial = 1:num_trials_ident
             FrequenciesRandom_max = 1.8;
             FrequenciesRandom = truncate(FR,0,FrequenciesRandom_max);
             freq_distribution = random(FrequenciesRandom,10000,1);
-        %     figure(figNum)
-        %     figNum = figNum+1;
-        %     histogram(freq_distribution,100)
-        %     title('Frequency Distribution')
-        %     xlabel('Frequency (Hz)')
+
         end
 
         AR = makedist('Uniform','lower',0,'upper',physiological_movement_max_amplitude);  %Full Amplitude Range
         AmplitudesRandom = AR;
         amp_distribution = random(AmplitudesRandom,10000,1);
-        %figure(figNum)
-        %figNum = figNum+1;
-        %histogram(amp_distribution,100)
-        %title('Amplitude Distribution')
-        %xlabel('Amplitude (mm)')
-
-        %PWR = makedist('Normal','mu',0.001,'sigma',0.005);
-        %PulseWidthRandom = truncate(PWR,0.001,0.010);   % 1ms - 10 ms
-        %pw_distribution = random(PulseWidthRandom,10000,1);
-        %figure(107)
-        %histogram(pw_distribution,100)
-        %title('Pulse Width Distribution')
 
         desired_displacement= 0;
         Freq_test = [];
@@ -181,13 +156,9 @@ for trial = 1:num_trials_ident
 
             for hh = 1:model-1
 
-                %normal distribution from 0 - g
                 DR = makedist('Uniform','lower',0,'upper',g);
                 DelaysRandom = DR;
                 delay_random_distribution = random(DelaysRandom,10000,1);
-    %             figure(figNum)
-    %             figNum = figNum+1;
-    %             histogram(delay_random_distribution,100)
 
                 random_delay = random(DelaysRandom,1,1);
 
@@ -204,128 +175,72 @@ for trial = 1:num_trials_ident
             Pulses_per_interval_total = num_pulses(model);
             Freq_test_average = [];
 
-            %Power Pectrum of Desired Displacement
-            [Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
             desired_displacement = desired_displacement';
 
         end
 
-        %%
-        %Create Frequency and Amplitude Parameters based on Analog Signal
-        Amplitude = desired_displacement*100;  %mV
+        %% Create Neural Input for ERS Simulation
+        %Create Frequency and Amplitude Parameters of Neural Input based on
+        %Desired Displacement Amplitude
+        Amplitude = desired_displacement*100;    %mV
         Frequency = desired_displacement*14000;  %Hz
 
-        %%
         %Generate Neural Command Signal with Frequency and Amplitdue Parameters
         neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
 
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,neural)
-    %     ax = gca;
-    %     ax.FontSize = 26;
-    %     xlabel('Time (s)','Fontsize',32)
-    %     ylabel('Amplitude (% of MUs)','Fontsize',32);
-    %     title('Neural Command Input','Fontsize',36)
-    %     grid on
-
         neural_simulink = [t_total' neural]; %Input for the Simulink Model
 
-        %Power Pectrum of Neural Input
-        [Pxx2,f2] = pwelch(neural,gausswin(Nfft),Nfft/2,Nfft,Fs);
+        %% Execute the ERS Simulation
 
-
-        %%
-        %Execute the Simulink Model with Set Output Noise
-
-        %Set Output Noise
-        set_param('EMG_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+        %Set Output Noise (as zero)
+        set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
         output_noise_power = [output_noise_power set_output_noise_power];
 
         %Run Simulink;
-        out = sim('EMG_Model_Simulink',time);
+        out = sim('ERS_simulation',time);
 
         %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
         %set_output_noise = set_output_noise_power;
 
-        %%
-        %Get Output Signals from Simulink
+        %% Get Output Signals from Simulink
+        
+        %EMG, Muscle Force and Healthy Displacement Output
         emg_simulink = out.EMGout;
-
-        %PDF of EMG
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     emg_pdf = emg_simulink;
-    %     emg_pdf(emg_pdf==0) = []; %Removing the zero values
-    %     histogram(emg_pdf,'Normalization','pdf')
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Volts (V)','Fontsize',18)
-    %     ylabel('Density','Fontsize',18)
-    %     title('EMG Distribution','Fontsize',24)
-    %     grid on
-
-        %Power Pectrum of EMG
-        [Pxx_emg,f_emg] = pwelch(emg_simulink,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
         force_simulink = out.EMG_Model_Force;
-
-        %Power Pectrum of FOrce
-        [Pxx_force,f_force] = pwelch(force_simulink,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
         output_displacement_simulink = out.EMG_Model_Displacement;
         t_simulink = out.tout;
-
+        
+        %% Input/Output for Identification
+        
         Zcur = [emg_simulink,output_displacement_simulink];
-
         Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
 
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     subplot(2,1,1)
-    %     plot(t_total,emg_simulink)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('EMG (V)','Fontsize',18);
-    %     title('(a) Output EMG','Fontsize',24)
-    %     grid on
-    %     
-    %     subplot(2,1,2)
-    %     plot(t_total,output_displacement_simulink)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Displacement (m)','Fontsize',18);
-    %     title('(b) Output Displacement','Fontsize',24)
-    %     grid on
-
-        %%
-        %Calculate Signal to Noise Ratio
+        %% Calculate Signal to Noise Ratio
         output_noise_simulink = out.Output_Noise;
 
         signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
         noise_snr = [noise_snr signal_to_noise];
 
-        %%
-        %Hammerstein System Identification (EMG-Movement Model)
-        %HK Method
+        %% Model Identification
+        
+        %Hammerstein System Identification (HK Method)
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
         NHK=nlbl;
         set(NHK,'idMethod','hk','displayFlag',true,'threshNSE',.001);
 
-        % Set umber of lags in IRF
+        %Set Number of lags in IRF
         I=NHK{1,2};
-        set(I,'nLags',2400); %(accuracy increases if nlags is increased)
+        set(I,'nLags',2400);
         NHK{1,2}=I;
-
+        
+        %Identify the model
         NHK=nlident(NHK,Zcur);
-
+        
+        %Residuals and Accuracy of Identified Model
         figure(model);
         [R, V, yp] = nlid_resid(NHK,Zcur);
-
+        
+        %Record the identifcation accuracy for each trial
         identification_accuracy(trial,model) = V;
         
         if use_fr == true
@@ -335,12 +250,14 @@ for trial = 1:num_trials_ident
             validation_pulses_total(trial,model) = Pulses_per_interval_total;
         end
         
+        %Store the identified models for each number of movements
         NHK_all_temp = [NHK_all_temp NHK];
         NHK = [];
         Zcur_all_temp = [Zcur_all_temp Zcur];
 
     end
-    %%
+    
+    %%  Store the set of models for one trial of all movements
     NHK_all = [NHK_all;NHK_all_temp];
     NHK_all_temp = [];
     Zcur_all = [Zcur_all;Zcur_all_temp];
@@ -348,33 +265,30 @@ for trial = 1:num_trials_ident
     
 end
 
-%% Model Validation
-%Set Initial Parmeters
+%% Set Intial Parameters for Model Validation
+
 noise_snr = [];
 set_output_noise_power = 0;
-%noise_multiplier = 10;
 output_noise_power = [];
-
-%For Power Spectrums
-Fs = 1000; 
-Nfft = 1000;
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_movement_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz) (Max is 1.8 Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
-W = 0.55;                  
-nf = 18;                  %number of random signal changes
-t_interval = physiological_movement_time/nf;    %Length of random interval (s)
+fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
+W = 0.55;                                       %Width of signal pulse (seconds)
+nf = physiological_movement_time/10;            %Number of random signal changes
+t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 
-%%
+%% Generate "Physiological" Displacement Signals for Model Validation
+
+%Generate num_trials_val signals for validation
 for trial = 1:num_trials_val
     
-    %(Physiologically Based Movment - Square pulses with random amplitude and random frequency)
-    t_total = 0:0.001:physiological_movement_time;             %Total time
+    % "Physiological" Movment
+    t_total = 0:0.001:physiological_movement_time;
     time = physiological_movement_time;
     
     FR = makedist('Normal','mu',fr,'sigma',sig);
@@ -391,7 +305,7 @@ for trial = 1:num_trials_val
     Pulses_per_interval_test = [];
 
     for j = 1 : nf    
-        t  = 0 : 0.001 : t_interval;         % Time Samples
+        t  = 0 : 0.001 : t_interval;
 
         if j == 1
             Freq = FrequenciesRandom_max;
@@ -429,69 +343,56 @@ for trial = 1:num_trials_val
     Pulses_per_interval_total = sum(Pulses_per_interval_test);
     Freq_test_average = sum(Freq_test)/length(Freq_test);
 
-    %Power Pectrum of Desired Displacement
-    [Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
     desired_displacement = desired_displacement';
     
-    %%
-    %Create Frequency and Amplitude Parameters based on Analog Signal
+    %% Generate Neural Input
+    %Create Frequency and Amplitude Parameters for Neural Input based on
+    %Desired Displacement Amplitude
     Amplitude = desired_displacement*100;  %mV
     Frequency = desired_displacement*14000;  %Hz
 
-    %%
     %Generate Neural Command Signal with Frequency and Amplitdue Parameters
     neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
 
     neural_simulink = [t_total' neural]; %Input for the Simulink Model
-
-    %Power Pectrum of Neural Input
-    [Pxx2,f2] = pwelch(neural,gausswin(Nfft),Nfft/2,Nfft,Fs);
     
-    %%
-    %Execute Simulink Model with Set Output Noise
+    %% Execute ERS_simulation
 
     %Set Output Noise
-    set_param('EMG_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink Model
-    out = sim('EMG_Model_Simulink',time);
+    out = sim('ERS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
     
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from ERS Simulation
+    
+    %EMG, Muscle Force, and Healthy Displacement Output
     emg_simulink = out.EMGout;
-    
-    emg_pdf = emg_simulink;
-    emg_pdf(emg_pdf==0) = []; %Removing the zero values
-    
-    %Power Pectrum of EMG
-    [Pxx_emg,f_emg] = pwelch(emg_simulink,gausswin(Nfft),Nfft/2,Nfft,Fs);
-    
     force_simulink = out.EMG_Model_Force;
-    
     output_displacement_simulink = out.EMG_Model_Displacement;
     t_simulink = out.tout;
-
+    
+    %% Input/Output for Model Validation
+    
     Zcur = [emg_simulink,output_displacement_simulink];
-
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
 
-    %%
-    %Calculate Signal to Noise Ratio
+    %% Calculate Signal to Noise Ratio
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr = [noise_snr signal_to_noise];
     
-    %%
-    %Model Validation
+    %% Model Validation
     
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
     
+    % Run through a set of models identified with different number of movements 
+    % and record the validation accuracy for the current validation signal
     for model = 1:num_models_for_ident
         
         figure(model)
@@ -502,6 +403,7 @@ for trial = 1:num_trials_val
     end
 
 end
+
 %% Plot Accuracy (%VAF) vs Average Frequency of identification signal
 
 figNum = 100;
@@ -528,7 +430,6 @@ if use_fr == true
     grid on
     
 else
-    
     
     identification_accuracy = max(0, identification_accuracy);
     identification_accuracy_mean = mean(identification_accuracy);
@@ -574,6 +475,7 @@ else
     grid on
     
 end
+
 
 tEnd = toc(tStart)/60
 
