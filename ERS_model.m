@@ -1,14 +1,11 @@
-%EMG Model v4 (Neural Command Input and Force/Movement Output)
-%Simulink Method
+%% EMG Response System (ERS)
+
 clc
 clear all
 
 tStart = tic;
 
-%git test
-
-%%
-%Set initial Parameters
+%% Set initial Parameters
 %set_output_noise_power = 1e-10;   %Output Noise Power
 set_output_noise_power = 0;
 %noise_multiplier = 10;
@@ -21,7 +18,7 @@ figNum = 1;
 Fs = 1000; 
 Nfft = 10000;
 
-%Desired Displacement Signal Type (Simple, PRBS or Physiologically Based)
+%Desired Displacement Signal Type (Simple, PRBS or "Physiological" Based)
 simple_movement = false;
 PRBS_movement = true;
 %physiological_movement = true;
@@ -31,15 +28,15 @@ PRBS_movement_time = 180;
 variable_amplitude = true;
 N = PRBS_movement_time/10;     %Number of times the amplitude randomly changes (For Variable Amplitude Only)
 M = 10000;                     %Number of each random value (For Variable Amplitude Only)
-PRBS_amplitude = 10;           %Amplitude (For Constant Amplitude Only)
+PRBS_amplitude = 10;           %PRBS Amplitude
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_movement_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz) (Max is 1.8 Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
-W = 0.55;                  
-nf = 18;                  %number of random signal changes
+fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
+W = 0.55;                                       %Width of signal pulse (seconds) 
+nf = physiological_movement_time/10;            %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
@@ -49,13 +46,14 @@ emg_all = [];
 
 compare_two_models = false;
 
-%%
 if compare_two_models == true
     PRBS_movement = [true false];
 end
 
+%% Generate Desired Displacement Signal (Simple, PRBS, or "Physiological")
+
 for num_signals = 1:length(PRBS_movement)
-    %Create Analog Signal (Desired Movement)
+
     if simple_movement == true
         time = 10;
         t_total = 0:0.001:time;
@@ -77,12 +75,10 @@ for num_signals = 1:length(PRBS_movement)
         A(1:2000) = random(AmplitudesRandom,1,1);
         A(2001:4500) = random(AmplitudesRandom,1,1);
         A(4501:7000) = random(AmplitudesRandom,1,1);
-        %A(7001:10001) = random(AmplitudesRandom,1,1);
         A(7001:9501) = random(AmplitudesRandom,1,1);
         
         delay = zeros(1,500);
         
-        %desired_displacement = A.*square(w*t_total+phi);
         desired_displacement = [delay A.*square(w*t_total_with_delay+phi)];
         desired_displacement = max(desired_displacement,0);
         
@@ -105,17 +101,17 @@ for num_signals = 1:length(PRBS_movement)
     
     
     elseif PRBS_movement(num_signals) == true
-        %(PRBS with Random or Constant Amplitude)
+        
         t_total = 0:0.001:PRBS_movement_time;
         time = PRBS_movement_time;
 
-        A = 0;                    %Intialize amplitude
+        A = 0;                                      %Intialize amplitude
         if variable_amplitude == true   
             for k = 1:N
                 if k == 1
-                    R = PRBS_amplitude;             %First interval is at max amplitude
+                    R = PRBS_amplitude;             %First interval is at max PRBS_amplitude
                 else
-                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBS_amplitude
                 end
                 for j = 1:M
                     A = [A R];
@@ -141,10 +137,6 @@ for num_signals = 1:length(PRBS_movement)
         %For this example, specify the sample time as 1 second.
         u = iddata([],u,0.001);
 
-        %Plot, and examine the generated signal.
-        %plot(u);
-        %title('Non-Periodic Signal')
-
         U = (u.InputData)';
         desired_displacement = A.*U;
 
@@ -164,8 +156,7 @@ for num_signals = 1:length(PRBS_movement)
         [Pxx1,f1] = pwelch(desired_displacement_zero,Nfft,[],Nfft,Fs);
               
     else   
-
-        %(Physiologically Based Movment - Square pulses with random amplitude and random frequency)
+        % "Physiological" Movement
         t_total = 0:0.001:physiological_movement_time;
         time = physiological_movement_time;
 
@@ -188,12 +179,6 @@ for num_signals = 1:length(PRBS_movement)
 %         title('Amplitude Distribution')
 %         xlabel('Amplitude (mm)')
 
-        %PWR = makedist('Normal','mu',0.001,'sigma',0.005);
-        %PulseWidthRandom = truncate(PWR,0.001,0.010);   % 1ms - 10 ms
-        %pw_distribution = random(PulseWidthRandom,10000,1);
-        %figure(107)
-        %histogram(pw_distribution,100)
-        %title('Pulse Width Distribution')
 
         desired_displacement=[0];
         Freq_test = [];
@@ -209,8 +194,6 @@ for num_signals = 1:length(PRBS_movement)
                 Freq = random(FrequenciesRandom,1,1);
                 A = random(AmplitudesRandom,1,1);
             end
-            %A = 0.01;
-            %W = random(PulseWidthRandom,1,1);
 
             if chance_of_zero == true
                 nums = randi([0 1], 1, 1);
@@ -259,30 +242,19 @@ for num_signals = 1:length(PRBS_movement)
 
     end
 
-    %%
-    %Create Frequency and Amplitude Parameters based on Analog Signal
-    Amplitude = desired_displacement*100;  %mV
+    %% Create Neural Input for ERS Simulation
+    %Create Frequency and Amplitude Parameters of the Neural Input based on
+    %Desired Displacement Amplitude
+    Amplitude = desired_displacement*100;    %mV
     Frequency = desired_displacement*14000;  %Hz
 
-    %%
-    %Generate Neural Command Signal with Frequency and Amplitdue Parameters
+    %Generate Neural Command Signal with Frequency and Amplitude Parameters
     neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
-
-%     figure(figNum)
-%     figNum = figNum+1;
-%     plot(t_total,neural)
-%     ax = gca;
-%     ax.FontSize = 26;
-%     xlabel('Time (s)','Fontsize',32)
-%     ylabel('Amplitude (% of MUs)','Fontsize',32);
-%     title('Neural Command Input','Fontsize',36)
-%     grid on
 
     neural_simulink = [t_total' neural]; %Input for the Simulink Model
 
     %Power Pectrum of Neural Input
     neural_zero = neural - mean(neural);
-    %[Pxx2,f2] = pwelch(neural_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
     
     if simple_movement == true
         Nfft = 1000;
@@ -308,13 +280,7 @@ for num_signals = 1:length(PRBS_movement)
         grid on
         
         subplot(2,2,2)
-%         hold on
-%         semilogy(f1a(1:11,1),Pxx1a(1:11,1));
-%         semilogy(f1b(1:11,1),Pxx1b(1:11,1));
-%         semilogy(f1c(1:11,1),Pxx1c(1:11,1));
-%         semilogy(f1d(1:11,1),Pxx1d(1:11,1));
         semilogy(f1a(1:11,1),Pxx1a(1:11,1),f1b(1:11,1),Pxx1b(1:11,1),f1c(1:11,1),Pxx1c(1:11,1),f1d(1:11,1),Pxx1d(1:11,1),'Linewidth',1);
-%         hold off
         ax = gca;
         ax.FontSize = 12;
         title('(b) Power Spectrum of Displacement','Fontsize',14);
@@ -337,7 +303,6 @@ for num_signals = 1:length(PRBS_movement)
         semilogy(f2b(1:151,1),Pxx2b(1:151,1),'Linewidth',1);
         semilogy(f2c(1:151,1),Pxx2c(1:151,1),'Linewidth',1);
         semilogy(f2d(1:151,1),Pxx2d(1:151,1),'Linewidth',1);
-%         semilogy(f2a(1:151,1),Pxx2a(1:151,1),f2b(1:151,1),Pxx2b(1:151,1),f2c(1:151,1),Pxx2c(1:151,1),f2d(1:151,1),Pxx2d(1:151,1));
         hold off
         ax = gca;
         ax.FontSize = 12;
@@ -349,21 +314,20 @@ for num_signals = 1:length(PRBS_movement)
         
     end
 
-    %%
-    %Execute Simulink Model with Set Output Noise
+    %% Execute ERS Simulation Simulink Model
 
-    %Set Output Noise
-    set_param('EMG_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    %Set Output Noise (set as zero)
+    set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink;
-    out = sim('EMG_Model_Simulink',time);
+    out = sim('ERS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
 
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from ERS Simulation Model
+    %EMG
     emg_simulink = out.EMGout;
     
     %PDF of EMG
@@ -378,37 +342,12 @@ for num_signals = 1:length(PRBS_movement)
     ylabel('Density','Fontsize',18)
     title('EMG Distribution','Fontsize',24)
     grid on
-
-    %Power Pectrum of EMG
-    emg_simulink_zero = emg_simulink - mean(emg_simulink);
-    [Pxx_emg,f_emg] = pwelch(emg_simulink_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-    %Plot frequency spectrum
-%     figure(figNum)
-%     figNum = figNum+1;
-%     semilogy(f_emg,Pxx_emg);
-%     ax = gca;
-%     ax.FontSize = 15;
-%     title('Power Spectrum of EMG','Fontsize',24);
-%     ylabel('PSD (log)','Fontsize',18); 
-%     xlabel('Frequency (Hz)','Fontsize',18);
-%     grid on;
-
+    
+    % Muscle Force
     force_simulink = out.EMG_Model_Force;
     
-%     figure(figNum)
-%     figNum = figNum+1;
-%     plot(t_total,force_simulink)
-%     ax = gca;
-%     ax.FontSize = 26;
-%     xlabel('Time (s)','Fontsize',32)
-%     ylabel('Force (N)','Fontsize',32);
-%     title('Muscle Force','Fontsize',36)
-%     grid on
-    
-    %Power Pectrum of FOrce
+    %Power Spectrum of Muscle Force
     force_simulink_zero = force_simulink - mean(force_simulink);
-    %[Pxx_force,f_force] = pwelch(force_simulink_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
 
     if simple_movement == true
         Nfft = 1000;
@@ -420,7 +359,63 @@ for num_signals = 1:length(PRBS_movement)
         [Pxx_force,f_force] = pwelch(force_simulink_zero,Nfft,[],Nfft,Fs);
     end
     
+    %Healthy Output Displacement and Time
+    output_displacement_simulink = out.EMG_Model_Displacement;
+    t_simulink = out.tout;
+    
+    %% Plot some Figures
+
     if simple_movement == true
+        
+        %Plot the Desired Displacement, Desired Displacement Spectrum,
+        %Neural Command, and Neural Command Input for Simple Movement
+        figure(figNum)
+        figNum = figNum+1;
+        
+        subplot(2,2,1)
+        plot(t_total,desired_displacement,'Linewidth',1.5);
+        ax = gca;
+        ax.FontSize = 12;
+        xlabel('Time (s)','Fontsize',15)
+        ylabel('Displacement (m)','Fontsize',15)
+        title('(a) Desired Displacement','Fontsize',14)
+        grid on
+        
+        subplot(2,2,2)
+        semilogy(f1a(1:11,1),Pxx1a(1:11,1),f1b(1:11,1),Pxx1b(1:11,1),f1c(1:11,1),Pxx1c(1:11,1),f1d(1:11,1),Pxx1d(1:11,1),'Linewidth',1);
+        ax = gca;
+        ax.FontSize = 12;
+        title('(b) Power Spectrum of Displacement','Fontsize',14);
+        ylabel('PSD (log)','Fontsize',15); 
+        xlabel('Frequency (Hz)','Fontsize',15);
+        grid on;
+        
+        subplot(2,2,3)
+        plot(t_total,neural)
+        ax = gca;
+        ax.FontSize = 12;
+        xlabel('Time (s)','Fontsize',15)
+        ylabel('Amplitude (% of MUs)','Fontsize',15);
+        title('(c) Neural Command Input','Fontsize',14)
+        grid on
+        
+        subplot(2,2,4)
+        hold on
+        semilogy(f2a(1:151,1),Pxx2a(1:151,1),'Linewidth',1);
+        semilogy(f2b(1:151,1),Pxx2b(1:151,1),'Linewidth',1);
+        semilogy(f2c(1:151,1),Pxx2c(1:151,1),'Linewidth',1);
+        semilogy(f2d(1:151,1),Pxx2d(1:151,1),'Linewidth',1);
+        hold off
+        ax = gca;
+        ax.FontSize = 12;
+        title('(d) Power Spectrum of Neural Input','Fontsize',14);
+        ylabel('PSD','Fontsize',15); 
+        xlabel('Frequency (Hz)','Fontsize',15);
+        legend('1st Movement','2nd Movement','3rd Movement','4th Movement','Fontsize',12)
+        grid on;
+        
+        % Plot the Neural Input, Neural Input Spectrum, Muscle Force, and
+        % Muscle Force Spectrum for a Simple Movement
         figure(figNum)
         figNum = figNum+1;
         
@@ -439,7 +434,6 @@ for num_signals = 1:length(PRBS_movement)
         semilogy(f2b(1:151,1),Pxx2b(1:151,1),'Linewidth',1);
         semilogy(f2c(1:151,1),Pxx2c(1:151,1),'Linewidth',1);
         semilogy(f2d(1:151,1),Pxx2d(1:151,1),'Linewidth',1);
-%         semilogy(f2a(1:151,1),Pxx2a(1:151,1),f2b(1:151,1),Pxx2b(1:151,1),f2c(1:151,1),Pxx2c(1:151,1),f2d(1:151,1),Pxx2d(1:151,1));
         hold off
         ax = gca;
         ax.FontSize = 12;
@@ -458,13 +452,6 @@ for num_signals = 1:length(PRBS_movement)
         grid on
         
         subplot(2,2,4)
-        %hold on
-%         semilogy(f_force1(1:11,1),Pxx_force1(1:11,1));
-%         semilogy(f_force2(1:11,1),Pxx_force2(1:11,1));
-%         semilogy(f_force3(1:11,1),Pxx_force3(1:11,1));
-%         semilogy(f_force4(1:11,1),Pxx_force4(1:11,1));
-        semilogy(f_force1(1:11,1),Pxx_force1(1:11,1),f_force1(1:11,1),Pxx_force2(1:11,1),f_force1(1:11,1),Pxx_force3(1:11,1),f_force1(1:11,1),Pxx_force4(1:11,1),'Linewidth',1);
-        %hold off
         ax = gca;
         ax.FontSize = 12;
         title('(d) Power Spectrum of Muscle Force','Fontsize',14);
@@ -473,90 +460,86 @@ for num_signals = 1:length(PRBS_movement)
         legend('1st Movement','2nd Movement','3rd Movement','4th Movement','Fontsize',12)
         grid on;
         
-    end
-
-    %%
-    %plot desired displacement, neural command and muscle force on one figure
-    figure(figNum)
-    figNum = figNum+1;
-
-    if PRBS_movement(1,num_signals) == true
-        
-        subplot(3,2,1)
-        plot(t_total,desired_displacement);
-        ax = gca;
-        ax.FontSize = 12;
-        xlabel('Time (s)','Fontsize',12)
-        ylabel('Displacement (m)','Fontsize',12)
-        title('(a) PRBS Desired Displacement','Fontsize',14)
-        grid on
-        
-        subplot(3,2,2)
-        semilogy(f1(1:301,1),Pxx1(1:301,1),'LineWidth',1.5);
-        %semilogy(f1(1:2000,1),Pxx1(1:2000,1),'LineWidth',1.5);
-        ax = gca;
-        ax.FontSize = 12;
-        title('(b) Power Spectrum of Desired Displacement','Fontsize',14);
-        ylabel('PSD (log)','Fontsize',12); 
-        xlabel('Frequency (Hz)','Fontsize',12);
-        grid on;
     else
-        
-        subplot(3,2,1)
-        plot(t_total,desired_displacement);
+
+        %Plot Desired Displacement, Neural Command Input and Muscle Force on one figure
+        figure(figNum)
+        figNum = figNum+1;
+
+        if PRBS_movement(1,num_signals) == true
+
+            subplot(3,2,1)
+            plot(t_total,desired_displacement);
+            ax = gca;
+            ax.FontSize = 12;
+            xlabel('Time (s)','Fontsize',12)
+            ylabel('Displacement (m)','Fontsize',12)
+            title('(a) PRBS Desired Displacement','Fontsize',14)
+            grid on
+
+            subplot(3,2,2)
+            semilogy(f1(1:301,1),Pxx1(1:301,1),'LineWidth',1.5);
+            ax = gca;
+            ax.FontSize = 12;
+            title('(b) Power Spectrum of Desired Displacement','Fontsize',14);
+            ylabel('PSD (log)','Fontsize',12); 
+            xlabel('Frequency (Hz)','Fontsize',12);
+            grid on;
+
+        else
+
+            subplot(3,2,1)
+            plot(t_total,desired_displacement);
+            ax = gca;
+            ax.FontSize = 12;
+            xlabel('Time (s)','Fontsize',12)
+            ylabel('Displacement (m)','Fontsize',12)
+            title('(a) "Physiological" Desired Displacement','Fontsize',14)
+            grid on
+
+            subplot(3,2,2)
+            semilogy(f1(1:60,1),Pxx1(1:60,1),'LineWidth',1.5);
+            ax = gca;
+            ax.FontSize = 12;
+            title('(b) Power Spectrum of Desired Displacement','Fontsize',14);
+            ylabel('PSD (log)','Fontsize',12); 
+            xlabel('Frequency (Hz)','Fontsize',12);
+            grid on;
+
+        end
+
+        subplot(3,2,3)
+        plot(t_total,neural)
         ax = gca;
         ax.FontSize = 12;
         xlabel('Time (s)','Fontsize',12)
-        ylabel('Displacement (m)','Fontsize',12)
-        title('(a) "Physiological" Desired Displacement','Fontsize',14)
+        ylabel('Amplitude (% of MUs)','Fontsize',12);
+        title('(c) Neural Command Input','Fontsize',14)
         grid on
-        
-        subplot(3,2,2)
-        semilogy(f1(1:60,1),Pxx1(1:60,1),'LineWidth',1.5);
-        %semilogy(f1(1:400,1),Pxx1(1:400,1),'LineWidth',1.5);
+
+        subplot(3,2,4)
+        semilogy(f2(1:1501,1),Pxx2(1:1501,1));
         ax = gca;
         ax.FontSize = 12;
-        title('(b) Power Spectrum of Desired Displacement','Fontsize',14);
+        title('(d) Power Spectrum of Neural Input','Fontsize',14);
         ylabel('PSD (log)','Fontsize',12); 
         xlabel('Frequency (Hz)','Fontsize',12);
         grid on;
+
+        subplot(3,2,[5 6])
+        plot(t_total,force_simulink)
+        ax = gca;
+        ax.FontSize = 12;
+        xlabel('Time (s)','Fontsize',12)
+        ylabel('Force (N)','Fontsize',12);
+        title('(e) Muscle Force','Fontsize',14)
+        grid on
     end
 
-    subplot(3,2,3)
-    plot(t_total,neural)
-    ax = gca;
-    ax.FontSize = 12;
-    xlabel('Time (s)','Fontsize',12)
-    ylabel('Amplitude (% of MUs)','Fontsize',12);
-    title('(c) Neural Command Input','Fontsize',14)
-    grid on
 
-    subplot(3,2,4)
-    semilogy(f2(1:1501,1),Pxx2(1:1501,1));
-    %semilogy(f2(1:10000,1),Pxx2(1:10000,1),'LineWidth',1.5);
-    ax = gca;
-    ax.FontSize = 12;
-    title('(d) Power Spectrum of Neural Input','Fontsize',14);
-    ylabel('PSD (log)','Fontsize',12); 
-    xlabel('Frequency (Hz)','Fontsize',12);
-    grid on;
-
-    subplot(3,2,[5 6])
-    plot(t_total,force_simulink)
-    ax = gca;
-    ax.FontSize = 12;
-    xlabel('Time (s)','Fontsize',12)
-    ylabel('Force (N)','Fontsize',12);
-    title('(e) Muscle Force','Fontsize',14)
-    grid on
-
-
-    %%
-    output_displacement_simulink = out.EMG_Model_Displacement;
-    t_simulink = out.tout;
+    %% Input/Output for Model Identification
 
     Zcur = [emg_simulink,output_displacement_simulink];
-
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
     
     figure(figNum)
@@ -580,67 +563,31 @@ for num_signals = 1:length(PRBS_movement)
     grid on
     
 
-    %%
-    %Calculate Signal to Noise Ratio
+    %% Calculate Signal to Noise Ratio
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr = [noise_snr signal_to_noise];
 
-    %%
-    %Hammerstein System Identification (EMG-Movement Model)
-    %HK Method
+    %% ERS Model Identification
+    
+    %Hammerstein System Identification (HK Method)
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
     NHK=nlbl;
     set(NHK,'idMethod','hk','displayFlag',true,'threshNSE',.001);
 
-    % Set umber of lags in IRF
+    %Set number of lags in IRF
     I=NHK{1,2};
-    set(I,'nLags',2400); %(accuracy increases if nlags is increased)
+    set(I,'nLags',2400);
     NHK{1,2}=I;
-
-    NHK=nlident(NHK,Zcur);
-    %NHK = normGainLE(NHK);
-    NHK = normCoefLE(NHK);
-    %NHK = normCoefNLE(NHK);
     
+    %Identify the Hammerstein Model and Normalize the Linear Element
+    NHK=nlident(NHK,Zcur);
+    NHK = normCoefLE(NHK);
+    
+    %Set the location of the red dashed lines
     upper_limit = 0.00067;
     lower_limit = -0.00067;
-
-    %Plots Hammerstein System and EMG Distribution with red line limits 
-%     figure(figNum)
-%     figNum = figNum+1;
-%     subplot(2,2,1)
-%     plot(NHK{1,1});
-%     ax = gca;
-%     ax.FontSize = 10;
-%     title('(a) Static Nonlinearity','Fontsize', 14)
-%     xlabel('Input','Fontsize',12)
-%     ylabel('Output','Fontsize',12)
-%     xline(upper_limit,'--r','LineWidth',1);
-%     xline(lower_limit,'--r','LineWidth',1);
-%     grid on
-
-%     subplot(2,2,[2 4])
-%     plot(NHK{1,2});
-%     ax = gca;
-%     ax.FontSize = 10;
-%     title('(c) Linear Element','Fontsize', 14)
-%     ylabel('X1', 'Fontsize',12)
-%     xlabel('Time (s)','Fontsize',12)
-%     grid on
-
-%     subplot(2,2,3)
-%     histogram(emg_pdf,'Normalization','pdf')
-%     ax = gca;
-%     ax.FontSize = 10;
-%     xline(upper_limit,'--r','LineWidth',1);
-%     xline(lower_limit,'--r','LineWidth',1);
-%     title('(b) EMG Distribution','Fontsize',14)
-%     xlabel('Volts (V)','Fontsize',12)
-%     ylabel('Density','Fontsize',12)
-%     grid on
 
     %Plots NL Hammerstein Part and EMG Distribution
     figure(figNum)
@@ -666,35 +613,6 @@ for num_signals = 1:length(PRBS_movement)
     ylabel('Density','Fontsize',18)
     title('(b) EMG Distribution','Fontsize',24)
     grid on
-
-    %Plots Linear Hammerstein Part
-    %figure(figNum)
-    %figNum = figNum+1;
-    %plot(NHK{1,2});
-    %grid on
-
-    %Plots NL and Linear Hammerstein Parts with Red Line Limits on NL
-%     figure(figNum)
-%     figNum = figNum+1;
-%     subplot(1,2,1)
-%     plot(NHK{1,1});
-%     ax = gca;
-%     ax.FontSize = 14;
-%     title('(a) Static Nonlinearity','Fontsize', 24)
-%     xlabel('Input','Fontsize',18)
-%     ylabel('Output','Fontsize',18)
-%     xline(upper_limit,'--r','LineWidth',1);
-%     xline(lower_limit,'--r','LineWidth',1);
-%     grid on
-% 
-%     subplot(1,2,2)
-%     plot(NHK{1,2});
-%     ax = gca;
-%     ax.FontSize = 14;
-%     title('(b) Linear Element','Fontsize', 24)
-%     ylabel('X1', 'Fontsize',18)
-%     xlabel('Lag (s)','Fontsize',18)
-%     grid on
     
     %Plot NL and Linear of Hammerstein System with only High Quality Values
     figure(figNum)
@@ -703,25 +621,22 @@ for num_signals = 1:length(PRBS_movement)
     plot(NHK{1,1});
     ax = gca;
     ax.FontSize = 15;
-    %yticks([0 0.4 0.8 1.2])
     title('(a) Static Nonlinearity','Fontsize', 24)
     xlabel('EMG Input, E(t) (V)','Fontsize',18)
     ylabel('Transformed EMG (V)','Fontsize',18)
     xlim([lower_limit upper_limit])
-    %xline(upper_limit,'--r','LineWidth',1);
-    %xline(lower_limit,'--r','LineWidth',1);
     grid on
 
     subplot(1,2,2)
     plot(NHK{1,2})
     ax = gca;
     ax.FontSize = 15;
-    %yticks([0 0.1 0.2 0.3])
     title('(b) Linear Element','Fontsize', 24)
     ylabel('X1', 'Fontsize',18)
     xlabel('Lags (s)','Fontsize',18)
     grid on
 
+    %Determine the accuracy and residuals of the model identification
     %Plots the Observed, Predicted, Superimposed, and Residuals
     figure(figNum);
     figNum = figNum+1;
@@ -744,32 +659,8 @@ for num_signals = 1:length(PRBS_movement)
     ylabel('Healthy Displacement, Pos_H(t) (m)', 'Fontsize', 24)
     legend('Predicted', 'Observed', 'Fontsize', 20)
     grid on
-    
-    %Box Plot (Expanded Time Scale) of previous plot
-%     figure(figNum);
-%     figNum = figNum+1;
-%     plot(t_total,pred);
-%     hold on
-%     plot(t_total, output_displacement_simulink)
-%     ax = gca;
-%     ax.FontSize = 14;
-%     hold off
-%     title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 24)
-%     xlabel('Time (s)', 'Fontsize', 18)
-%     ylabel('Displacement (m)', 'Fontsize', 18)
-%     legend('Predicted', 'Observed')
-%     %create a new pair of axes inside current figure
-%     axes('position',[.65 .175 .25 .25])
-%     box on % put box around new pair of axes
-%     indexOfInterest = (t_total < 100) & (t_total > 60); 
-%     plot(t_total(indexOfInterest),pred(indexOfInterest)) % plot on new axes
-%     hold on
-%     plot(t_total(indexOfInterest),output_displacement_simulink(indexOfInterest)) % plot on new axes
-%     hold off
-%     axis tight
 
-    %Plots the Residuals, Residuals Distribution, and Residuals Power
-    %Spectrum
+    %Plots the Residuals, Residuals Distribution, and Residual Power Spectrum
     figure(figNum)
     figNum = figNum+1;
     subplot(2,2,[1 2])
@@ -932,52 +823,6 @@ for num_signals = 1:length(PRBS_movement)
     xlabel('Time (s)','Fontsize',20)
     ylabel('Correlation','Fontsize',20)
     grid on
-    
-    %Plots the Superimposed, Residuals, Residuals Distribution, and Residuals Power
-    %Spectrum
-%     figure(figNum)
-%     figNum = figNum+1;
-%     subplot(3,1,1)
-%     plot(t_total,pred);
-%     hold on
-%     plot(t_total, output_displacement_simulink)
-%     ax = gca;
-%     ax.FontSize = 15;
-%     hold off
-%     title(['(a) Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 22)
-%     xlabel('Time (s)', 'Fontsize', 18)
-%     ylabel('Displacement (m)', 'Fontsize', 18)
-%     legend('Predicted', 'Observed', 'Fontsize', 16)
-%     
-%     subplot(4,1,2)
-%     plot(R)
-%     ax = gca;
-%     ax.FontSize = 14;
-%     title('Residuals of EMG/Whisk Hammerstein Model','Fontsize',24)
-%     xlabel('Time (s)','Fontsize',20)
-%     ylabel('Displacement (m)','Fontsize',20)
-%     grid on
-% 
-%     subplot(3,1,2)
-%     p = pdf(R);
-%     plot(p)
-%     ax = gca;
-%     ax.FontSize = 15;
-%     xlabel('Displacement (m)','Fontsize',18)
-%     ylabel('Density','Fontsize',18)
-%     title('(b) Residual Distribution','Fontsize',22)
-%     grid on
-% 
-%     S = spect(R);
-%     subplot(3,1,3)
-%     plot(S(1:50,:),'LineWidth',1.5);
-%     ax = gca;
-%     ax.FontSize = 15;
-%     title('Power Spectrum of Residuals','Fontsize',22);
-%     ylabel('PSD','Fontsize',18); 
-%     xlabel('Frequency (Hz)','Fontsize',18);
-%     grid on
-    
 
     %Plots the Superimposed, Residuals Distribution, and Residuals Power
     %Spectrum
@@ -994,15 +839,6 @@ for num_signals = 1:length(PRBS_movement)
     xlabel('Time (s)', 'Fontsize', 20)
     ylabel('Healthy Displacement, Pos_H(t) (m)', 'Fontsize', 20)
     legend('Predicted', 'Observed', 'Fontsize', 18)
-    
-%     subplot(4,1,2)
-%     plot(R)
-%     ax = gca;
-%     ax.FontSize = 14;
-%     title('Residuals of EMG/Whisk Hammerstein Model','Fontsize',24)
-%     xlabel('Time (s)','Fontsize',20)
-%     ylabel('Displacement (m)','Fontsize',20)
-%     grid on
 
     subplot(2,2,3)
     p = pdf(R);
@@ -1031,7 +867,7 @@ for num_signals = 1:length(PRBS_movement)
     
 end
 
-%%
+%% Manually Compare the Models Identifified from Different Input Types
 
 if compare_two_models == true
     NHK1 = NHK_all(1);
