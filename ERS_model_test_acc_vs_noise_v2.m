@@ -326,7 +326,7 @@ physiological_movement_max_amplitude = 0.01;
 fr = 0.1;                 %Frequency distribution mean (Hz) (Max is 1.8 Hz)
 sig = 0.6;                %Std of Frequency Distribution (Hz)
 W = 0.55;                  
-nf = 18;                  %number of random signal changes
+nf = physiological_movement_time/10;                  %number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
