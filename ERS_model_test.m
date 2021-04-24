@@ -1,10 +1,34 @@
-%ERS Model Test (MODEL VALIDATION)
+%% ERS Model Test (MODEL VALIDATION)
 
-%Validate the estimated model by using it to predict the movements
+%Validates the estimated models by using it to predict the movements
 %generated in response to an input realization which is different than that
 %used to identify the model
 
 %INSTRUCTIONS: RUN ERS_model FIRST and THEN RUN THIS
+
+%When running the script, you need to provide the following input:
+% 1. Identified Model Type.
+% 2. Number of Validation Trials.
+
+
+%% User Input Prompts
+
+prompt1 = 'Identified Model Type? PRBS/Phys [PRBS]: ';
+str1 = input(prompt1,'s');
+if str1 ~= 'PRBS' & str1 ~= 'Phys' & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'PRBS';
+end
+
+prompt2 = 'Number of Validation Trials? [1]: ';
+str2 = input(prompt2);
+if isempty(str2)
+    str2 = 1;
+end
+
+tStart = tic;
 
 %% Set initial Parameters
 noise_snr = [];
@@ -16,7 +40,7 @@ figNum = 50;
 Fs = 1000; 
 Nfft = 10000;
 
-%Desired Displacement Signal Type (PRBS or "Physiological")
+%Desired Displacement Signal Type: PRBS or "Physiological"
 PRBS_movement = true;
 %physiological_movement = true;
 
@@ -25,16 +49,16 @@ PRBS_movement_time = 180;
 variable_amplitude = true;
 N = PRBS_movement_time/10;      %Number of times the amplitude randomly changes (For Variable Amplitude Only)
 M = 10000;                      %Number of each random value (For Variable Amplitude Only)
-PRBS_amplitude = 10;            %PRBS Amplitude
+PRBS_amplitude = 10;            %PRBS Amplitude (mm)
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
-physiological_movement_max_amplitude = 0.01;
+physiological_movement_max_amplitude = 0.01;    %"Physioloigcal" Amplitude (m)
 fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
 sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                                       %Width of signal pulse (seconds) 
 nf = physiological_movement_time/10;            %Number of random signal changes
-t_interval = physiological_movement_time/nf;    %Length of random interval (s)
+t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 %Set which model you want to use
@@ -43,7 +67,7 @@ if compare_two_models == true
 end
 
 %Set number of Validation Trials (To get a mean and std VAF)
-num_trials = 1;
+num_trials = str2;
 validation_accuracy = [];
 
 %% Generate Desired Displacement Signals for Validation
@@ -159,6 +183,7 @@ for trial = 1:num_trials
     end
 
     %% Create Neural Input for ERS Simulation
+    
     %Create Frequency and Amplitude Parameters of the Neural Input based on
     %Desired Displacement Amplitude
     Amplitude = desired_displacement*100;    %mV
@@ -200,7 +225,6 @@ for trial = 1:num_trials
     output_displacement_simulink = out.EMG_Model_Displacement;
     t_simulink = out.tout;
 
-
     %% Input/Output for Model Validation
     
     Zcur = [emg_simulink,output_displacement_simulink];
@@ -226,8 +250,11 @@ for trial = 1:num_trials
 end
 
 %Calculate validation mean and Std
-validation_accuracy_mean = mean(validation_accuracy)
-validation_accuracy_std = std(validation_accuracy)
+validation_accuracy_mean = mean(validation_accuracy);
+disp(['Validation Accuracy Mean: ' num2str(round(validation_accuracy_mean,1)) '%'])
+
+validation_accuracy_std = std(validation_accuracy);
+disp(['Validation Accuracy Std: ' num2str(round(validation_accuracy_mean,1)) '%'])
 
 %% Plot the Validation results of last validation trial
 
@@ -268,8 +295,8 @@ ylabel('Density','Fontsize',18)
 title('Residual Distribution','Fontsize',20)
 
 R_zero = R - mean(R);
-S = spect(R_zero);
-S_frequency = 0.0556:0.0556:0.0556*length(S);
+% S = spect(R_zero);
+% S_frequency = 0.0556:0.0556:0.0556*length(S);
 % subplot(3,1,3)
 % semilogy(S_frequency(:,1:50),S(1:50,:),'LineWidth',1.5);
 % ax = gca;
@@ -281,7 +308,6 @@ S_frequency = 0.0556:0.0556:0.0556*length(S);
 
 [PxxR,fR] = pwelch(double(R_zero),[],[],[],Fs);
 subplot(3,1,3)
-%semilogy(fR(1:110,:),PxxR(1:110,:),'LineWidth',1.5);
 semilogy(fR(1:650,:),PxxR(1:650,:),'LineWidth',1.5);
 ax = gca;
 ax.FontSize = 12;
@@ -350,7 +376,6 @@ R_double = double(R_zero);
 L = length(R_double)-1;
 maxlag = L*0.10;
 [res_corr,lags] = xcorr(R_double,maxlag,'normalized');
-%[res_corr,lags] = xcov(R,maxlag,'coeff');
 lags = lags/Fs;
 subplot(2,2,4),plot(lags,res_corr,'LineWidth',1.5)
 ax = gca;
@@ -371,6 +396,4 @@ ylabel('Displacement Amplitude (m)','Fontsize',18);
 xlabel('Residuals (m)','Fontsize',18);
 grid on
     
-
-
-
+tEnd = toc(tStart)/60

@@ -1,15 +1,60 @@
 %% EMG Response System (ERS)
 
+%Identifies the ERS model with simulated data from the ERS simulation, and 
+%plots the results. Can identify models based on the PRBS input and the 
+%"Physiological" input.
+
+%When running the script, you need to provide the following input:
+% 1. Compare two models (PRBS & Physiological)? Y/N (Default is Y)
+% if N,
+% 2. Type of Input? Simple/PRBS/Physiological (Default is PRBS)
+
 clc
 clear all
+
+%% User Input Prompts
+
+prompt1 = 'Compare two models (PRBS & Physiological)? Y/N [Y]: ';
+str1 = input(prompt1,'s');
+if str1 ~= 'Y' & str1 ~= 'N' & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Y';
+end
+
+if str1 == 'Y'
+    str1 = true;
+elseif str1 == 'N'
+    str1 = false;
+end
+
+if str1 == false
+    prompt2 = 'Type of Input? Simp(Simple)/PRBS/Phys(Physiological) [PRBS]: ';
+    str2 = input(prompt2,'s');
+    if str2 ~= 'Simp' & str2 ~= 'PRBS' & str2 ~= 'Phys'
+        disp('Invalid Input')
+        return
+    elseif isempty(str2)
+        str2 = 'PRBS';
+    end
+    
+    if str2 == 'Simp'
+        simple_movement = true;
+    elseif str2 == 'PRBS'
+        simple_movement = false;
+        PRBS_movement = true;
+    else
+        simple_movement = false;
+        PRBS_movement = false;
+    end      
+end
 
 tStart = tic;
 
 %% Set initial Parameters
-%set_output_noise_power = 1e-10;   %Output Noise Power
-set_output_noise_power = 0;
-%noise_multiplier = 10;
-accuracy = [];
+
+set_output_noise_power = 0;        %Output Noise Power
 noise_snr = [];
 output_noise_power = [];
 figNum = 1;
@@ -18,39 +63,36 @@ figNum = 1;
 Fs = 1000; 
 Nfft = 10000;
 
-%Desired Displacement Signal Type (Simple, PRBS or "Physiological" Based)
-simple_movement = false;
-PRBS_movement = true;
-%physiological_movement = true;
-
-%Signal Amplitude (PRBS Signal)
+%PRBS Signal Parameters
 PRBS_movement_time = 180;
-variable_amplitude = true;
+variable_amplitude = true;     %PRBS can either be constant amplitude or variable amplitude
 N = PRBS_movement_time/10;     %Number of times the amplitude randomly changes (For Variable Amplitude Only)
 M = 10000;                     %Number of each random value (For Variable Amplitude Only)
-PRBS_amplitude = 10;           %PRBS Amplitude
+PRBS_amplitude = 10;           %PRBS Amplitude (mm)
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
-physiological_movement_max_amplitude = 0.01;
+physiological_movement_max_amplitude = 0.01;    %"Physiological" Amplitude (m)
 fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
 sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                                       %Width of signal pulse (seconds) 
 nf = physiological_movement_time/10;            %Number of random signal changes
-t_interval = physiological_movement_time/nf;    %Length of random interval (s)
+t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
+accuracy = [];
 NHK_all = [];
 Zcur_all = [];
 emg_all = [];
 
-compare_two_models = false;
+compare_two_models = str1;
 
 if compare_two_models == true
+    simple_movement = false;
     PRBS_movement = [true false];
 end
 
-%% Generate Desired Displacement Signal (Simple, PRBS, or "Physiological")
+%% Generate Desired Displacement Signal (Simple, PRBS, or "Physiological") for Model Identification
 
 for num_signals = 1:length(PRBS_movement)
 
@@ -62,12 +104,7 @@ for num_signals = 1:length(PRBS_movement)
         w = 0.8*pi;
         phi = 0;
         
-        %A = ones(1,length(t_total));
         A = ones(1,length(t_total_with_delay));
-%         A(1:2000) = 0;
-%         A(2001:20001) = 1;
-%         A(20002:40001) = 3;
-%         A(40002:70001) = 6;
         
         AR = makedist('Uniform','lower',0,'upper',0.01);  %Full Amplitude Range
         AmplitudesRandom = AR;
@@ -93,12 +130,11 @@ for num_signals = 1:length(PRBS_movement)
         grid on
         
         %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-        Nfft = 1000;
+        Nfft = Nfft/10;
         [Pxx1a,f1a] = pwelch(desired_displacement(1,499:1750),Nfft,[],Nfft,Fs);
         [Pxx1b,f1b] = pwelch(desired_displacement(1,2999:4250),Nfft,[],Nfft,Fs);
         [Pxx1c,f1c] = pwelch(desired_displacement(1,5499:6750),Nfft,[],Nfft,Fs);
         [Pxx1d,f1d] = pwelch(desired_displacement(1,7999:9250),Nfft,[],Nfft,Fs);
-    
     
     elseif PRBS_movement(num_signals) == true
         
@@ -118,7 +154,7 @@ for num_signals = 1:length(PRBS_movement)
                 end
             end
         else
-            A = PRBS_amplitude;              %Constant Amplitude
+            A = PRBS_amplitude;                     %Else set as Constant Amplitude
         end
 
         Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
@@ -152,7 +188,6 @@ for num_signals = 1:length(PRBS_movement)
         
         %Power Pectrum of Desired Displacement
         desired_displacement_zero = desired_displacement - mean(desired_displacement);
-        %[Pxx1,f1] = pwelch(desired_displacement_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
         [Pxx1,f1] = pwelch(desired_displacement_zero,Nfft,[],Nfft,Fs);
               
     else   
@@ -179,13 +214,12 @@ for num_signals = 1:length(PRBS_movement)
 %         title('Amplitude Distribution')
 %         xlabel('Amplitude (mm)')
 
-
         desired_displacement=[0];
         Freq_test = [];
         Pulses_per_interval_test = [];
 
         for j = 1 : nf    
-            t  = 0 : 0.001 : t_interval;         % Time Samples
+            t  = 0 : 0.001 : t_interval;         % Time Intervals
             
             if j == 1
                 Freq = FrequenciesRandom_max;
@@ -235,7 +269,6 @@ for num_signals = 1:length(PRBS_movement)
 
         %Power Pectrum of Desired Displacement
         desired_displacement_zero = desired_displacement - mean(desired_displacement);
-        %[Pxx1,f1] = pwelch(desired_displacement_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
         [Pxx1,f1] = pwelch(desired_displacement_zero,Nfft,[],Nfft,Fs);
 
         desired_displacement = desired_displacement';
@@ -243,6 +276,7 @@ for num_signals = 1:length(PRBS_movement)
     end
 
     %% Create Neural Input for ERS Simulation
+    
     %Create Frequency and Amplitude Parameters of the Neural Input based on
     %Desired Displacement Amplitude
     Amplitude = desired_displacement*100;    %mV
@@ -266,55 +300,7 @@ for num_signals = 1:length(PRBS_movement)
         [Pxx2,f2] = pwelch(neural_zero,Nfft,[],Nfft,Fs);
     end
 
-    if simple_movement == true
-        figure(figNum)
-        figNum = figNum+1;
-        
-        subplot(2,2,1)
-        plot(t_total,desired_displacement,'Linewidth',1.5);
-        ax = gca;
-        ax.FontSize = 12;
-        xlabel('Time (s)','Fontsize',15)
-        ylabel('Displacement (m)','Fontsize',15)
-        title('(a) Desired Displacement','Fontsize',14)
-        grid on
-        
-        subplot(2,2,2)
-        semilogy(f1a(1:11,1),Pxx1a(1:11,1),f1b(1:11,1),Pxx1b(1:11,1),f1c(1:11,1),Pxx1c(1:11,1),f1d(1:11,1),Pxx1d(1:11,1),'Linewidth',1);
-        ax = gca;
-        ax.FontSize = 12;
-        title('(b) Power Spectrum of Displacement','Fontsize',14);
-        ylabel('PSD (log)','Fontsize',15); 
-        xlabel('Frequency (Hz)','Fontsize',15);
-        grid on;
-        
-        subplot(2,2,3)
-        plot(t_total,neural)
-        ax = gca;
-        ax.FontSize = 12;
-        xlabel('Time (s)','Fontsize',15)
-        ylabel('Amplitude (% of MUs)','Fontsize',15);
-        title('(c) Neural Command Input','Fontsize',14)
-        grid on
-        
-        subplot(2,2,4)
-        hold on
-        semilogy(f2a(1:151,1),Pxx2a(1:151,1),'Linewidth',1);
-        semilogy(f2b(1:151,1),Pxx2b(1:151,1),'Linewidth',1);
-        semilogy(f2c(1:151,1),Pxx2c(1:151,1),'Linewidth',1);
-        semilogy(f2d(1:151,1),Pxx2d(1:151,1),'Linewidth',1);
-        hold off
-        ax = gca;
-        ax.FontSize = 12;
-        title('(d) Power Spectrum of Neural Input','Fontsize',14);
-        ylabel('PSD','Fontsize',15); 
-        xlabel('Frequency (Hz)','Fontsize',15);
-        legend('1st Movement','2nd Movement','3rd Movement','4th Movement','Fontsize',12)
-        grid on;
-        
-    end
-
-    %% Execute ERS Simulation Simulink Model
+    %% Execute ERS Simulation (Simulink Model)
 
     %Set Output Noise (set as zero)
     set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
@@ -536,9 +522,9 @@ for num_signals = 1:length(PRBS_movement)
         grid on
     end
 
-
     %% Input/Output for Model Identification
-
+    
+    %EMG input and Healthy Displacement Output
     Zcur = [emg_simulink,output_displacement_simulink];
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
     
@@ -562,8 +548,9 @@ for num_signals = 1:length(PRBS_movement)
     title('(b) Output Healthy Displacement, Pos_H(t)','Fontsize',24)
     grid on
     
-
     %% Calculate Signal to Noise Ratio
+    
+    %Get noise from ERS simulation
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
@@ -585,7 +572,7 @@ for num_signals = 1:length(PRBS_movement)
     NHK=nlident(NHK,Zcur);
     NHK = normCoefLE(NHK);
     
-    %Set the location of the red dashed lines
+    %Set the location of the red dashed lines in plots below
     upper_limit = 0.00067;
     lower_limit = -0.00067;
 
@@ -683,21 +670,10 @@ for num_signals = 1:length(PRBS_movement)
     grid on
     
     R_zero = R - mean(R);
-%     S = spect(R_zero);
-%     S_frequency = 0.0556:0.0556:0.0556*length(S);
-%     subplot(2,2,4)
-%     semilogy(S_frequency(:,1:150),S(1:150,:),'LineWidth',1.5);
-%     ax = gca;
-%     ax.FontSize = 15;
-%     title('(c) Power Spectrum of Residuals','Fontsize',20);
-%     ylabel('PSD (log)','Fontsize',20); 
-%     xlabel('Frequency (Hz)','Fontsize',20);
-%     grid on
+    R_double = double(R_zero);
      
-    %[PxxR,fR] = pwelch(double(R_zero),gausswin(Nfft),Nfft/2,Nfft,Fs);
-    [PxxR,fR] = pwelch(double(R_zero),[],[],[],Fs);
+    [PxxR,fR] = pwelch(R_double,[],[],[],Fs);
     subplot(2,2,4)
-    %semilogy(fR(1:110,:),PxxR(1:110,:),'LineWidth',1.5);
     semilogy(fR(1:650,:),PxxR(1:650,:),'LineWidth',1.5);
     ax = gca;
     ax.FontSize = 15;
@@ -708,43 +684,44 @@ for num_signals = 1:length(PRBS_movement)
 
     %Plots the Residuals, Residuals Distribution (With Normal Distribution), and Residuals Power
     %Spectrum
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,2,[1 2])
-    plot(R)
-    ax = gca;
-    ax.FontSize = 15;
-    title('(a) Residuals of ERS Hammerstein Model','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Displacement (m)','Fontsize',20)
-    grid on
+    if PRBS_movement == true
+        figure(figNum)
+        figNum = figNum+1;
+        subplot(2,2,[1 2])
+        plot(R)
+        ax = gca;
+        ax.FontSize = 15;
+        title('(a) Residuals of ERS Hammerstein Model','Fontsize',20)
+        xlabel('Time (s)','Fontsize',20)
+        ylabel('Displacement (m)','Fontsize',20)
+        grid on
 
-    subplot(2,2,3)
-    p = pdf(R);
-    plot(p)
-    hold on
-    R_double = double(R_zero);
-    pd = fitdist(R_double,'Normal');
-    x_values = -0.002:0.00004:0.002;
-    z = pdf(pd,x_values);
-    plot(x_values,z,'r', 'Linewidth',2.5)
-    hold off
-    ax = gca;
-    ax.FontSize = 15;
-    xlabel('Displacement (m)','Fontsize',20)
-    ylabel('Density','Fontsize',20)
-    title('(b) Residual Distribution','Fontsize',20)
-    legend('Observed','Theoretical','Fontsize',15)
-    grid on
+        subplot(2,2,3)
+        p = pdf(R);
+        plot(p)
+        hold on
+        pd = fitdist(R_double,'Normal');
+        x_values = -0.002:0.00004:0.002;
+        z = pdf(pd,x_values);
+        plot(x_values,z,'r', 'Linewidth',2.5)
+        hold off
+        ax = gca;
+        ax.FontSize = 15;
+        xlabel('Displacement (m)','Fontsize',20)
+        ylabel('Density','Fontsize',20)
+        title('(b) Residual Distribution','Fontsize',20)
+        legend('Observed','Theoretical','Fontsize',15)
+        grid on
 
-    subplot(2,2,4)
-    semilogy(fR(1:650,:),PxxR(1:650,:),'LineWidth',1.5);
-    ax = gca;
-    ax.FontSize = 15;
-    title('(c) Power Spectrum of Residuals','Fontsize',20);
-    ylabel('PSD (log)','Fontsize',20); 
-    xlabel('Frequency (Hz)','Fontsize',20);
-    grid on
+        subplot(2,2,4)
+        semilogy(fR(1:650,:),PxxR(1:650,:),'LineWidth',1.5);
+        ax = gca;
+        ax.FontSize = 15;
+        title('(c) Power Spectrum of Residuals','Fontsize',20);
+        ylabel('PSD (log)','Fontsize',20); 
+        xlabel('Frequency (Hz)','Fontsize',20);
+        grid on
+    end
     
     %Plots the Residuals, Residuals Distribution, and Autocorrelation
     figure(figNum)
@@ -771,7 +748,6 @@ for num_signals = 1:length(PRBS_movement)
     L = length(R_double)-1;
     maxlag = L*0.10;
     [res_corr,lags] = xcorr(R_double,maxlag,'normalized');
-    %[res_corr,lags] = xcov(R,maxlag,'coeff');
     lags = lags/Fs;
     subplot(2,2,4),plot(lags,res_corr,'LineWidth',1.5)
     ax = gca;
@@ -780,86 +756,43 @@ for num_signals = 1:length(PRBS_movement)
     xlabel('Time (s)','Fontsize',20)
     ylabel('Correlation','Fontsize',20)
     grid on
-    
-    %Plots the Residuals, Residuals Distribution, and Autocorrelation
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,2,[1 2])
-    plot(R)
-    ax = gca;
-    ax.FontSize = 15;
-    title('(a) Residuals of ERS Hammerstein Model','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Displacement (m)','Fontsize',20)
-    grid on
-
-    subplot(2,2,3)
-    p = pdf(R);
-    plot(p)
-    hold on
-    R_double = double(R);
-    pd = fitdist(R_double,'Normal');
-    x_values = -0.002:0.00004:0.002;
-    z = pdf(pd,x_values);
-    plot(x_values,z,'r', 'Linewidth',2.5)
-    hold off
-    ax = gca;
-    ax.FontSize = 15;
-    xlabel('Displacement (m)','Fontsize',20)
-    ylabel('Density','Fontsize',20)
-    title('(b) Residual Distribution','Fontsize',20)
-    legend('Observed','Theoretical','Fontsize',15)
-    grid on
-
-    L = length(R_double)-1;
-    maxlag = L*0.10;
-    [res_corr,lags] = xcorr(R_double,maxlag,'normalized');
-    %[res_corr,lags] = xcov(R,maxlag,'coeff');
-    lags = lags/Fs;
-    subplot(2,2,4),plot(lags,res_corr,'LineWidth',1.5)
-    ax = gca;
-    ax.FontSize = 15;
-    title('(c) Auto-Correlation Residuals','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Correlation','Fontsize',20)
-    grid on
 
     %Plots the Superimposed, Residuals Distribution, and Residuals Power
     %Spectrum
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,2,[1 2])
-    plot(t_total,pred);
-    hold on
-    plot(t_total, output_displacement_simulink)
-    ax = gca;
-    ax.FontSize = 16;
-    hold off
-    title(['(a) Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 20)
-    xlabel('Time (s)', 'Fontsize', 20)
-    ylabel('Healthy Displacement, Pos_H(t) (m)', 'Fontsize', 20)
-    legend('Predicted', 'Observed', 'Fontsize', 18)
-
-    subplot(2,2,3)
-    p = pdf(R);
-    plot(p)
-    ax = gca;
-    ax.FontSize = 16;
-    xlabel('Displacement (m)','Fontsize',20)
-    ylabel('Density','Fontsize',20)
-    title('(b) Residual Distribution','Fontsize',18)
-    grid on
-    
-    R_zero = R - mean(R);
-    S = spect(R_zero);
-    subplot(2,2,4)
-    plot(S(1:150,:));
-    ax = gca;
-    ax.FontSize = 16;
-    title('(c) Power Spectrum of Residuals','Fontsize',18);
-    ylabel('PSD','Fontsize',20); 
-    xlabel('Frequency (Hz)','Fontsize',20);
-    grid on
+%     figure(figNum)
+%     figNum = figNum+1;
+%     subplot(2,2,[1 2])
+%     plot(t_total,pred);
+%     hold on
+%     plot(t_total, output_displacement_simulink)
+%     ax = gca;
+%     ax.FontSize = 16;
+%     hold off
+%     title(['(a) Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 20)
+%     xlabel('Time (s)', 'Fontsize', 20)
+%     ylabel('Healthy Displacement, Pos_H(t) (m)', 'Fontsize', 20)
+%     legend('Predicted', 'Observed', 'Fontsize', 18)
+% 
+%     subplot(2,2,3)
+%     p = pdf(R);
+%     plot(p)
+%     ax = gca;
+%     ax.FontSize = 16;
+%     xlabel('Displacement (m)','Fontsize',20)
+%     ylabel('Density','Fontsize',20)
+%     title('(b) Residual Distribution','Fontsize',18)
+%     grid on
+%     
+%     R_zero = R - mean(R);
+%     S = spect(R_zero);
+%     subplot(2,2,4)
+%     plot(S(1:150,:));
+%     ax = gca;
+%     ax.FontSize = 16;
+%     title('(c) Power Spectrum of Residuals','Fontsize',18);
+%     ylabel('PSD','Fontsize',20); 
+%     xlabel('Frequency (Hz)','Fontsize',20);
+%     grid on
     
     NHK_all = [NHK_all NHK];
     Zcur_all = [Zcur_all Zcur];
@@ -878,6 +811,8 @@ if compare_two_models == true
     emg_pdf1(emg_pdf1==0) = []; %Removing the zero values
     emg_pdf2(emg_pdf2==0) = []; %Removing the zero values
     
+    %Sets the Upper Limit and Lower limit for "High Quality" values of the
+    %model nonlinear element
     upper_limit1 = 0.000586;
     lower_limit1 = -0.000613;
     upper_limit2 = 0.000602;
@@ -1010,6 +945,5 @@ if compare_two_models == true
     hold off
     
 end
-
 
 tEnd = toc(tStart)/60
