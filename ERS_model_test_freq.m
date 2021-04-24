@@ -8,6 +8,26 @@
 clc
 clear all
 
+%% User Input Prompts
+
+prompt1 = 'Maximum Number of Movement Pulses? [20]: ';
+str1 = input(prompt1);
+if isempty(str1)
+    str1 = 20;
+end
+
+prompt2 = 'Number of Identification Trials? [10]: ';
+str2 = input(prompt2);
+if isempty(str2)
+    str2 = 10;
+end
+
+prompt3 = 'Number of Validation Trials? [30]: ';
+str3 = input(prompt3);
+if isempty(str3)
+    str3 = 30;
+end
+
 tStart = tic;
 
 %% Set initial Parameters
@@ -25,11 +45,11 @@ output_noise_power = [];
 % variable_amplitude = false;
 % N = 18;                           %Number of times the amplitude randomly changes (For Variable Amplitude Only)
 % M = 10000;                        %Number of each random value (For Variable Amplitude Only)
-% PRBS_amplitude = 10;              %Amplitude (For Constant Amplitude Only)
+% PRBS_amplitude = 10;              %Amplitude
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
-physiological_movement_max_amplitude = 0.01;
+physiological_movement_max_amplitude = 0.01;    %Physiological Amplitude (m)
 fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
 sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                                       %Width of signal pulse (seconds)
@@ -47,15 +67,15 @@ validation_accuracy = [];
 
 %% Set Number of Movement Pulses
 
-use_fr = false;         %Use frequency instead of number of pulses for Physiological Input
+use_fr = false;                     %Use frequency instead of number of pulses for Physiological Input
 if use_fr == true
     fr = 0:0.1:0.3;
     sig = 0.6;
 end
 
-num_pulses = 1:1:20;
-num_trials_ident = 10;
-num_trials_val = 30;
+num_pulses = 1:1:str1;
+num_trials_ident = str2;
+num_trials_val = str3;
 variable_time = false;
 
 if use_fr == true
