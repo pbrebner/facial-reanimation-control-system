@@ -1,19 +1,33 @@
 %% ERS Model Test (Accuracy vs Ouput Noise)
 
 %Accuracy vs Noise with Constant Record Length
-%Increases the output noise(measurement error) in simulink model
+%Iteratively increases the output noise(measurement error) in simulink model
 
 %Identifies one set of models for each signal type (PRBS and Physiological)
-%with increasing levels of noise for each model (Identifies 2x
-%'noise_level_iters' models)
+%with increasing levels of noise for each model (Identifies 2x 'noise_level_iters' models)
 %Validates each identified model with 'num_trials' number of physiological
-%signals
-%Plots identification accuracy and monte carlo validation accuracy
+%signals to get a VAF mean and std
+%Plots identification accuracy vs noise and validation accuracy vs noise
 
 %UPDATED TO COMPARE WITH CLEAN SIGNAL
 
+%When running the script, you need to provide the following input:
+% 1. Number of Validation Trials?
+%       Number of validation trials used to calculate the VAF mean and std
+
 clc
 clear all
+
+%% User Input Prompts
+
+prompt1 = 'Number of Validation Trials? 1-50 [30]: ';
+str1 = input(prompt1);
+if str1<1 | str1>50
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 30;
+end
 
 tStart = tic;
 
@@ -26,14 +40,14 @@ set_seed = 23341;
 
 %PRBS Signal Parameters
 PRBS_movement_time = 180;
-variable_amplitude = false;
-N = PRBS_movement_time/10;
-M = 10000;
-PRBS_amplitude = 10; %mm
+variable_amplitude = false;        %PRBS can either be constant amplitude or variable amplitude
+N = PRBS_movement_time/10;         %Number of times the amplitude randomly changes (For Variable Amplitude Only)     
+M = 10000;                         %Number of each random value (For Variable Amplitude Only)
+PRBS_amplitude = 10;               %PRBS Amplitude (mm)
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
-physiological_movement_max_amplitude = 0.01;
+physiological_movement_max_amplitude = 0.01;    %Physiological Amplitude (m)
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                                       %Width of signal pulse (seconds)
@@ -59,13 +73,15 @@ Zcur_all = [];
 emg_all = [];
 
 %% Num trials and Signal Types
-num_trials = 30;
+num_trials = str1;
 signals = 2;
 
 %% Generate the Desired Displacement for Model Identification
 
+% Generates a Physiological signal first, identifies models with increasing
+% noise levels, evaluates the predicted output of these models with a clean output,
+% stores these models, and then repeats for PRBS signal
 for signal = 1:signals
-    
     
     if signal == 1
         PRBS_movement = false;

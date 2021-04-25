@@ -1,21 +1,54 @@
 %% ERS Model Test for Identification Signal Amplitude and Record Length
 
-%Can test the Model on:
+%Can Evaluate the Identified Models based on the:
 % 1. Amplitude of the PRBS Input used for Identification
 % 2. Record Length of PRBS Input used for Identification
 
 %Identifies models with one set of PRBS signals and then validates with multiple
-%different physiological signals (Since const amp PRBS is deterministic, the
-%identifcation results are always the same for the same signal amplitude)
+%different physiological signals (Since PRBS is deterministic, the
+%identifcation results do not vary much so multiple identification trials are 
+%unnecessary)
+
+%When running the script, you need to provide the following input:
+% 1. Type of Model Test?
+%       Choose which model test you want to run, amplitude vs model accuracy
+%       or record length vs model accuracy
+% 2. Number of Validation Trials?
+%       Number of validation trials used to calculate the VAF mean and std
 
 clc
 clear all
 
+%% User Input Prompts
+
+prompt1 = 'Type of Model Test? Amplitude(Amp)/Record Length(Rec) [Amp]: ';
+str1 = input(prompt1,'s');
+if ~strcmp(str1,'Amp') & ~strcmp(str1,'Rec') & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Amp';
+end
+
+prompt2 = 'Number of Validation Trials? 1-50 [30]: ';
+str2 = input(prompt2);
+if str2<1 | str2>50
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 30;
+end
+
 tStart = tic;
 
 %Can change record length or amplitude of signals used for identification
-variable_time = true;
-variable_signal = false;
+if strcmp(str1,'Amp')
+    variable_time = false;
+    variable_signal = true;
+elseif strcmp(str1,'Rec')
+    variable_time = true;
+    variable_signal = false;
+end
 
 %% Set initial parameters
 set_output_noise_power = 0;
@@ -47,7 +80,7 @@ validation_accuracy = [];
 num_record_lengths = length(PRBS_movement_time);
 num_models_for_ident = length(PRBS_amplitude);
 
-num_trials = 30;
+num_trials = str2;
 
 %% Generate Desired Displacement for Identification
 
