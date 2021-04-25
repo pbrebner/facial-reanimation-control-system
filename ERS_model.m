@@ -6,8 +6,11 @@
 
 %When running the script, you need to provide the following input:
 % 1. Compare two models (PRBS & Physiological)? Y/N (Default is Y)
-% if N,
+%       Whether or not you want to identify models from both PRBS and Physiological Inputs.
+%       running this will compare the two identifoed models at the end
+%if N,
 % 2. Type of Input? Simple/PRBS/Physiological (Default is PRBS)
+%       Choose the type of input you want to use for Model Identification
 
 clc
 clear all
@@ -16,32 +19,33 @@ clear all
 
 prompt1 = 'Compare two models (PRBS & Physiological)? Y/N [Y]: ';
 str1 = input(prompt1,'s');
-if str1 ~= 'Y' & str1 ~= 'N' & ~isempty(str1)
+if ~strcmp(str1,'Y') & ~strcmp(str1,'N') & ~isempty(str1)
     disp('Invalid Input')
     return
 elseif isempty(str1)
     str1 = 'Y';
 end
 
-if str1 == 'Y'
+if strcmp(str1,'Y')
     str1 = true;
-elseif str1 == 'N'
+elseif strcmp(str1,'N')
     str1 = false;
 end
 
 if str1 == false
-    prompt2 = 'Type of Input? Simp(Simple)/PRBS/Phys(Physiological) [PRBS]: ';
+    prompt2 = 'Type of Input? Simple/PRBS/Physiological(Phys) [PRBS]: ';
     str2 = input(prompt2,'s');
-    if str2 ~= 'Simp' & str2 ~= 'PRBS' & str2 ~= 'Phys'
+    if ~strcmp(str2,'Simple') & ~strcmp(str2,'PRBS') & ~strcmp(str2,'Phys') & ~isempty(str2)
         disp('Invalid Input')
         return
     elseif isempty(str2)
         str2 = 'PRBS';
     end
     
-    if str2 == 'Simp'
+    if strcmp(str2,'Simple')
         simple_movement = true;
-    elseif str2 == 'PRBS'
+        PRBS_movement = false;
+    elseif strcmp(str2,'PRBS')
         simple_movement = false;
         PRBS_movement = true;
     else
@@ -54,7 +58,7 @@ tStart = tic;
 
 %% Set initial Parameters
 
-set_output_noise_power = 0;        %Output Noise Power
+set_output_noise_power = 0;        %Output Noise Power (Set as zero)
 noise_snr = [];
 output_noise_power = [];
 figNum = 1;
@@ -94,7 +98,7 @@ end
 
 %% Generate Desired Displacement Signal (Simple, PRBS, or "Physiological") for Model Identification
 
-for num_signals = 1:length(PRBS_movement)
+for signal = 1:length(PRBS_movement)
 
     if simple_movement == true
         time = 10;
@@ -136,7 +140,7 @@ for num_signals = 1:length(PRBS_movement)
         [Pxx1c,f1c] = pwelch(desired_displacement(1,5499:6750),Nfft,[],Nfft,Fs);
         [Pxx1d,f1d] = pwelch(desired_displacement(1,7999:9250),Nfft,[],Nfft,Fs);
     
-    elseif PRBS_movement(num_signals) == true
+    elseif PRBS_movement(signal) == true
         
         t_total = 0:0.001:PRBS_movement_time;
         time = PRBS_movement_time;
@@ -452,7 +456,7 @@ for num_signals = 1:length(PRBS_movement)
         figure(figNum)
         figNum = figNum+1;
 
-        if PRBS_movement(1,num_signals) == true
+        if PRBS_movement(1,signal) == true
 
             subplot(3,2,1)
             plot(t_total,desired_displacement);

@@ -1,30 +1,55 @@
 %% ERS Model Test for Number of Movement Pulses of "Physiological" Movement
 
-%Tests the Model based on the number of pulses of the Physiological Input
+%Evaluates the Model based on the number of movement pulses of the 
+%Physiological Input used for identification. Plots the identifcation
+%accuracy vs number of movement pulses and validation accuracy vs number of
+%movement pulses
 
-%Identifies models with one set of signals and then validates with multiple
-%different signals
+%The script generates physiological desired displacement signals, starting
+%at 1 movement pulse and iteratively increases the number of movements by
+%1 for subsequent signals. A specified number of Models are identified for 
+%each of these signals. A set of these models are then validated with 
+%typical "physiological" movements for a specified number of trials
+
+%When running the script, you need to provide the following input:
+% 1. Maximum number of Movement Pulses?
+%       The signals used for identification will start at 1 movement pulse
+%       and iteratively increase by 1 until the maximum number of movement
+%       pulse is reached
+% 2. Number of Identification Trials?
+%       Number of model identification trials to calculate VAF mean and std
+% 3. Number of Validation Trials?
+%       Number of  model validation trials to calculate VAF mean and std
 
 clc
 clear all
 
 %% User Input Prompts
 
-prompt1 = 'Maximum Number of Movement Pulses? [20]: ';
+prompt1 = 'Maximum Number of Movement Pulses? 1-40 [20]: ';
 str1 = input(prompt1);
-if isempty(str1)
+if str1<1 | str1>40
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
     str1 = 20;
 end
 
-prompt2 = 'Number of Identification Trials? [10]: ';
+prompt2 = 'Number of Identification Trials? 1-20 [10]: ';
 str2 = input(prompt2);
-if isempty(str2)
+if str2<1 | str2>20
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
     str2 = 10;
 end
 
-prompt3 = 'Number of Validation Trials? [30]: ';
+prompt3 = 'Number of Validation Trials? 1-50 [30]: ';
 str3 = input(prompt3);
-if isempty(str3)
+if str3<1 | str3>50
+    disp('Invalid Input')
+    return
+elseif isempty(str3)
     str3 = 30;
 end
 
@@ -34,18 +59,6 @@ tStart = tic;
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
-
-%Desired Displacement Signal Type (Simple, PRBS or "Physiological")
-% simple_movement = false;
-% PRBS_movement = true;
-%physiological_movement = true;
-
-%PRBS Signal Parameters
-% PRBS_movement_time = 180;
-% variable_amplitude = false;
-% N = 18;                           %Number of times the amplitude randomly changes (For Variable Amplitude Only)
-% M = 10000;                        %Number of each random value (For Variable Amplitude Only)
-% PRBS_amplitude = 10;              %Amplitude
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
@@ -200,6 +213,7 @@ for trial = 1:num_trials_ident
         end
 
         %% Create Neural Input for ERS Simulation
+        
         %Create Frequency and Amplitude Parameters of Neural Input based on
         %Desired Displacement Amplitude
         Amplitude = desired_displacement*100;    %mV
@@ -307,7 +321,7 @@ chance_of_zero = false;
 %Generate num_trials_val signals for validation
 for trial = 1:num_trials_val
     
-    % "Physiological" Movment
+    % "Physiological" Movement
     t_total = 0:0.001:physiological_movement_time;
     time = physiological_movement_time;
     
@@ -366,9 +380,10 @@ for trial = 1:num_trials_val
     desired_displacement = desired_displacement';
     
     %% Generate Neural Input
+    
     %Create Frequency and Amplitude Parameters for Neural Input based on
     %Desired Displacement Amplitude
-    Amplitude = desired_displacement*100;  %mV
+    Amplitude = desired_displacement*100;    %mV
     Frequency = desired_displacement*14000;  %Hz
 
     %Generate Neural Command Signal with Frequency and Amplitdue Parameters
