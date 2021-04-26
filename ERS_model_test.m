@@ -3,7 +3,9 @@
 %Validates the estimated models from ERS_model by using them to predict the
 %movements generated in response to input realizations which are different 
 %than that used to identify the models. Will validate the specified model 
-%with a PRBS input signal and a "Physiological" input signal 
+%with a PRBS input signal and then a "Physiological" input signal. Plots the 
+%superimposed predicted and observed displacements, residual distribution, 
+%and residual spectrum 
 
 %INSTRUCTIONS: RUN ERS_model FIRST and THEN RUN THIS
 
@@ -11,6 +13,7 @@
 %If both PRBS and Physiological Models were Identified in ERS_model,
 % 1. Which Identified Model Type do you want to Validate?
 %       Choose either the PRBS model or Phys model for validation
+%If not, will skip question 1 and default to the only model identified.
 % 2. Number of Validation Trials?
 %       Number of validation trials used to calculate VAF mean and std
 
@@ -35,8 +38,7 @@ if compare_two_models == true
     end
 else
     NHK = NHK_all(1);
-    input_type = str2;
-    disp(['Validating Model Identified from' input_type 'Input'])
+    disp(['Validating Model Identified from ' input_type ' Input'])
 end
 
 prompt2 = 'Number of Validation Trials? 1-50 [1]: ';
