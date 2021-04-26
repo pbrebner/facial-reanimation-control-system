@@ -1,59 +1,90 @@
-%Paralyzed Model Test
+%% SRS Model Test for Number of Movement Pulses of "Physiological" Signal used for Identification
 
-%Validate the estimated model by using it to predict the movements
-%generated in response to an input realization which is different than that
-%used to identify the model
+%Evaluates the Model based on the number of movement pulses of the 
+%"Physiological" Input used for identification. Plots the identifcation
+%accuracy vs number of movement pulses and validation accuracy vs number of
+%movement pulses
 
-%Tests the Model based on the number of pulses of the Physiological Input
+%The script generates a set of physiological desired displacement signals, 
+%starting at 1 movement pulse and iteratively increases the number of movements 
+%by 1 for subsequent signals. A specified number of Models are identified for 
+%each of these signals. A set of these models are then validated with 
+%typical "physiological" movements for a specified number of trials to
+%calculate the validation VAF mean and std.
 
-%Identifies models with one set of signals and then validates with multiple
-%different signals
+%When running the script, you need to provide the following input:
+% 1. Maximum number of Movement Pulses?
+%       The signals used for identification will start at 1 movement pulse
+%       and iteratively increase by 1 until the maximum number of movement
+%       pulse is reached
+% 2. Number of Identification Trials?
+%       Number of model identification trials to calculate VAF mean and
+%       std for model identification. Increasing this value has a large 
+%       impact on how long the script needs to run 
+% 3. Number of Validation Trials?
+%       Number of  model validation trials to calculate VAF mean and std
 
 clc
 clear all
 
+%% User Input Prompts
+
+prompt1 = 'Model Type? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
+
+prompt2 = 'Maximum Number of Movement Pulses? 1-50 [30]: ';
+str2 = input(prompt2);
+if str2<1 | str2>50
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 30;
+end
+
+prompt3 = 'Number of Identification Trials? 1-20 [1]: ';
+str3 = input(prompt3);
+if str3<1 | str3>20
+    disp('Invalid Input')
+    return
+elseif isempty(str3)
+    str3 = 1;
+end
+
+prompt4 = 'Number of Validation Trials? 1-50 [30]: ';
+str4 = input(prompt4);
+if str4<1 | str4>50
+    disp('Invalid Input')
+    return
+elseif isempty(str4)
+    str4 = 30;
+end
+
 tStart = tic;
 
-%%
-%Set initial Parameters
-%set_output_noise_power = 1e-10;        %Output Noise Power
+%% Set initial Parameters
+
 set_output_noise_power = 0;
-% time = 180;                             %Total time in seconds
-%noise_multiplier = 10;
-% accuracy = [];
-% record_length = [];
 noise_snr = [];
 output_noise_power = [];
 
-%For Power Spectrums
 Fs = 1000; 
-Nfft = 1000;
-
-PRBS_stimulus = false;
-% physiological_stimulus = true;
-
-%PRBS Stimulus
-% PRBS_stimulus_time = 180;
-% variable_amplitude = false;
-% N = PRBS_stimulus_time/10;
-% M = 1000;
-% PRBS_amplitude = 10; %mm
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
 physiological_stimulus_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.8;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.8;                                      %Std of Frequency Distribution (Hz)
 W = 0.45;                  
-nf = physiological_stimulus_time/10;                  %number of random signal changes
+nf = physiological_stimulus_time/10;            %Number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
+%Type of Model
 LNL_model = false;
 Hammerstein_model = false;
 Weiner_model = true;
 Linear_IRF_model = true;
 
+%Initialize Models
 LNL_all_temp = [];
 LNL_all = [];
 Hammerstein_all_temp = [];
@@ -62,24 +93,24 @@ Weiner_all_temp = [];
 Weiner_all = [];
 IRF_model_all_temp = [];
 IRF_model_all = [];
-NLN_all_temp = [];
-NLN_all = [];
+
 Zcur_all_temp = [];
 Zcur_all = [];
 
 identification_accuracy = [];
 validation_accuracy = [];
 
-%%
-use_fr = false; %Use frequency instead of number of pulses for Physiological Input
+%% Set Number of Movement Pulses
+
+use_fr = false;         %Use frequency instead of number of pulses for Physiological Input
 if use_fr == true
     fr = 0:0.1:0.3;
     sig = 0.6;
 end
 
-num_pulses = 1:1:30;
-num_trials_ident = 1;
-num_trials_val = 30;
+num_pulses = 1:1:str2;
+num_trials_ident = str3;
+num_trials_val = str4;
 variable_time = false;
 
 if use_fr == true
@@ -91,7 +122,8 @@ end
 validation_frequency = [];
 validation_pulses_total = [];
 
-%%
+%% Generate the Desired Displacement Signals for Model Identification
+
 for trial = 1:num_trials_ident
     
     for model = 1:num_models_for_ident
@@ -109,28 +141,11 @@ for trial = 1:num_trials_ident
             FrequenciesRandom_max = 2.1;
             FrequenciesRandom = truncate(FR,0,FrequenciesRandom_max);
             freq_distribution = random(FrequenciesRandom,10000,1);
-        %     figure(figNum)
-        %     figNum = figNum+1;
-        %     histogram(freq_distribution,100)
-        %     title('Frequency Distribution')
-        %     xlabel('Frequency (Hz)')
         end
 
         AR = makedist('Uniform','lower',0,'upper',physiological_stimulus_max_amplitude);  %Full Amplitude Range
         AmplitudesRandom = AR;
         amp_distribution = random(AmplitudesRandom,10000,1);
-        %figure(figNum)
-        %figNum = figNum+1;
-        %histogram(amp_distribution,100)
-        %title('Amplitude Distribution')
-        %xlabel('Amplitude (mm)')
-
-        %PWR = makedist('Normal','mu',0.001,'sigma',0.005);
-        %PulseWidthRandom = truncate(PWR,0.001,0.010);   % 1ms - 10 ms
-        %pw_distribution = random(PulseWidthRandom,10000,1);
-        %figure(107)
-        %histogram(pw_distribution,100)
-        %title('Pulse Width Distribution')
 
         desired_displacement= 0;
         Freq_test = [];
@@ -180,7 +195,6 @@ for trial = 1:num_trials_ident
         else
             t  = 0 : 0.001 : time;
 
-            %A = random(AmplitudesRandom,1,1);
             A = physiological_stimulus_max_amplitude;
             g = time/num_pulses(model);
 
@@ -198,9 +212,6 @@ for trial = 1:num_trials_ident
                 DR = makedist('Uniform','lower',0,'upper',g);
                 DelaysRandom = DR;
                 delay_random_distribution = random(DelaysRandom,10000,1);
-    %                         figure(figNum)
-    %                         figNum = figNum+1;
-    %                         histogram(delay_random_distribution,100)
 
                 random_delay = random(DelaysRandom,1,1);
 
@@ -219,17 +230,6 @@ for trial = 1:num_trials_ident
 
         end
 
-
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,desired_displacement)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Desired Displacement (m)','Fontsize',18)
-    %     title('Analog Signal of Desired Displacement','Fontsize',24)
-    %     grid on
-
         %FFT of Desired Displacement
         L = length(desired_displacement);
 
@@ -237,131 +237,57 @@ for trial = 1:num_trials_ident
         P1 = abs(Y/L);
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-    %     Pxx1 = Pxx1';
 
         f1 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(f1(1:5000,:),Pxx1(1:5000,:)) 
-    %     title('FFT of Desired Displacement')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx1(f)|')
-
-        %Power Pectrum of Desired Displacement
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        % figure(figNum)
-        % figNum = figNum+1;
-        % subplot(2,1,1)
-        % plot(t_total,desired_displacement)
-        % ax = gca;
-        % ax.FontSize = 14;
-        % xlabel('Time (s)','Fontsize',18)
-        % ylabel('Desired Displacement (m)','Fontsize',18)
-        % title('Analog Signal of Desired Movement','Fontsize',24)
-        % grid on
-
-        %Plot frequency spectrum
-        % subplot(2,1,2)
-        % semilogy(f1(1:6,1),Pxx1(1:6,1));
-        % ax = gca;
-        % ax.FontSize = 14;
-        % title('Power Spectrum of Desired Displacement','Fontsize',24);
-        % ylabel('PSD (log)','Fontsize',18); 
-        % xlabel('Frequency (Hz)','Fontsize',18);
-        % grid on;
 
         desired_displacement = desired_displacement';
 
         stim_amplitude = desired_displacement*170;  %mV
         stim_frequency = 50;
 
-    %     input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
         amplitude_modulation = stim_amplitude;
         amplitude_modulation_simulink = [t_total' amplitude_modulation'];
 
-
-        %FFT of Input Stimulus
-        L = length(input_stimulus);
-
-        Y = fft(input_stimulus);
-        P2 = abs(Y/L);
-        Pxx2 = P2(1:L/2+1);
-        Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-        Pxx2 = Pxx2';
-
-        f2 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum +1;
-    %     plot(f2(1:15000,:),Pxx2(1:15000,:)) 
-    %     title('FFT of Input Stimulus')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx2(f)|')
-
-        %Power Pectrum of Stimulus Input
-        %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stimulus_simulink = [t_total' input_stimulus'];
-
-
-        %%
-        %Execute Simulink Model with Set Output Noise
-
-        set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+        %% Execute the SRS Simulation
+        
+        %Set Output noise as Zero
+        set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
         output_noise_power = [output_noise_power set_output_noise_power];
 
         %Run Simulink;
-        out = sim('Paralyzed_Model_Simulink',time);
+        out = sim('SRS_simulation',time);
 
         %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
         %set_output_noise = set_output_noise_power;
 
-        %%
-        %Get Output Signals from Simulink
+        %% Get Output Signals from SRS Simulation (Simulink Model)
 
         %Muscle Force
         force_simulink = out.Paralyzed_Model_Force;
 
-        % figure(figNum)
-        % figNum = figNum+1;
-        % plot(t_total,force_simulink)
-        % ax = gca;
-        % ax.FontSize = 15;
-        % xlabel('Time (s)','Fontsize',18)
-        % ylabel('Force (N)','Fontsize',18);
-        % title('Muscle Force','Fontsize',24)
-        % grid on
-
-        %Power Pectrum of Force
-        [Pxx_force,f_force] = pwelch(force_simulink,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-
-        %%
         %Input Stimulus and Output Displacement
         input_stimulus = out.Paralyzed_Model_Stimulus;
         output_displacement_simulink = out.Paralyzed_Model_Displacement;
         t_simulink = out.tout;
 
+        %% Input/Output for Model Identification
+        
         Zcur = [amplitude_modulation',output_displacement_simulink];
-
         Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
 
-        %%
-        %Calculate Signal to Noise Ratio
+        %% Calculate Signal to Noise Ratio
         output_noise_simulink = out.Output_Noise;
 
         signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
         noise_snr = [noise_snr signal_to_noise];
 
-        %%
-        %Model Identification (LNL Model or NLN Model)
+        %% Model Identification (LNL, Hammerstein, Wiener, Linear IRF)
 
         if LNL_model == true
 
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
             LNL=lnlbl;
             set(LNL,'idMethod','hk','nLags1',750,'polyOrderMax',2,'nLags2',750,... 
             'hkTolerance', 0.1, 'nhkMaxIts', 10, 'nhkMaxInner', 5);
@@ -387,7 +313,6 @@ for trial = 1:num_trials_ident
         elseif Hammerstein_model == true
         
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
             Hammerstein=nlbl;
             set(Hammerstein,'idMethod','hk','displayFlag',true,'threshNSE',.001);
             I=Hammerstein{1,2};
@@ -415,7 +340,6 @@ for trial = 1:num_trials_ident
         elseif Weiner_model == true
 
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
             Weiner = lnbl; %Wiener
             set(Weiner,'idMethod','hk');
             I = Weiner{1,1};
@@ -441,10 +365,9 @@ for trial = 1:num_trials_ident
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
         elseif Linear_IRF_model == true
+            
             % Identify a two-sided IRF Model
-
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
             IRF_model = irf(Zcur,'nLags',1200,'nSides',1);
 
             figure(model)
@@ -461,48 +384,6 @@ for trial = 1:num_trials_ident
 
             IRF_model_all_temp = [IRF_model_all_temp IRF_model];
             IRF_model = [];
-            Zcur_all_temp = [Zcur_all_temp Zcur];
-            
-        else
-            set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-            Zcur_NLN = iddata(output_displacement_simulink,input_stimulus',Fs);
-            %'domainIncr',0.001,'comment','Input Stimulus, Output Displacement','chanNames', {'Stimulus (V)' 'Displacement (m)'});
-
-            set(Zcur_NLN,'InputName','Input Stimulus','OutputName','Output Displacement');
-
-            NLN = nlhw(Zcur_NLN,[2 2 2]);
-
-            [y,fit,ic] = compare(Zcur_NLN,NLN);
-
-            pred = y.y(:,1);
-            V = vaf(output_displacement_simulink,pred);
-            identification_accuracy(trial,model) = V; 
-
-            R = output_displacement_simulink - pred;
-
-            %Plots just the superimposed part with %VAF in the title
-            figure(model);
-            plot(t_total,pred);
-            hold on
-            plot(t_total, output_displacement_simulink)
-            ax = gca;
-            ax.FontSize = 18;
-            hold off
-            title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-            xlabel('Time (s)', 'Fontsize', 24)
-            ylabel('Displacement (m)', 'Fontsize', 24)
-            legend('Predicted', 'Observed', 'Fontsize', 20)
-            grid on
-
-            if use_fr == true
-                validation_frequency(trial,model) = Freq_test_average;
-                validation_pulses_total(trial,model) = Pulses_per_interval_total;
-            else
-                validation_pulses_total(trial,model) = Pulses_per_interval_total;
-            end
-
-            NLN_all_temp = [NLN_all_temp NLN];
-            NLN = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
         end
@@ -521,39 +402,31 @@ for trial = 1:num_trials_ident
     IRF_model_all = [IRF_model_all;IRF_model_all_temp];
     IRF_model_all_temp = [];
 
-    NLN_all = [NLN_all;NLN_all_temp];
-    NLN_all_temp = [];
-
     Zcur_all = [Zcur_all;Zcur_all_temp];
     Zcur_all_temp = [];
 
 end
 
+%% Set Initial Parameters for Model Validation
 
-%% Model Validation
-%Set initial Parameters
-%set_output_noise_power = 1e-10;        %Output Noise Power
 set_output_noise_power = 0;
-%noise_multiplier = 10;
 noise_snr = [];
 output_noise_power = [];
 
-%For Power Spectrums
 Fs = 1000; 
-Nfft = 1000;
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
 physiological_stimulus_max_amplitude = 0.010;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.8;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.8;                                      %Std of Frequency Distribution (Hz)
 W = 0.45;                  
-nf = physiological_stimulus_time/10;                  %number of random signal changes
+nf = physiological_stimulus_time/10;            %Number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
+%% Generate Desired Displacement and Amplitude Modulation Signals for Model Validation
 
-%%
 for trial = 1:num_trials_val
 
     t_total = 0:0.001:physiological_stimulus_time;
@@ -618,105 +491,53 @@ for trial = 1:num_trials_val
     P1 = abs(Y/L);
     Pxx1 = P1(1:L/2+1);
     Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-%     Pxx1 = Pxx1';
     
     f1 = (Fs*(0:(L/2))/L)';
-%     figure(figNum)
-%     figNum = figNum+1;
-%     plot(f1(1:5000,:),Pxx1(1:5000,:)) 
-%     title('FFT of Desired Displacement')
-%     xlabel('f (Hz)')
-%     ylabel('|Pxx1(f)|')
-    
-    %Power Pectrum of Desired Displacement
-    %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
 
     desired_displacement = desired_displacement';
 
     stim_amplitude = desired_displacement*170;  %mV
     stim_frequency = 50;
 
-    %input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
     
     amplitude_modulation = stim_amplitude;
     amplitude_modulation_simulink = [t_total' amplitude_modulation'];
-
-    %FFT of Input Stimulus
-    L = length(input_stimulus);
     
-    Y = fft(input_stimulus);
-    P2 = abs(Y/L);
-    Pxx2 = P2(1:L/2+1);
-    Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-    Pxx2 = Pxx2';
+    %% Execute SRS Simulation (Simulink Model)
     
-    f2 = (Fs*(0:(L/2))/L)';
-%     figure(figNum)
-%     figNum = figNum +1;
-%     plot(f2(1:15000,:),Pxx2(1:15000,:)) 
-%     title('FFT of Input Stimulus')
-%     xlabel('f (Hz)')
-%     ylabel('|Pxx2(f)|')
-    
-    %Power Pectrum of Stimulus Input
-    %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-    stimulus_simulink = [t_total' input_stimulus'];
-    
-    %%
-    %Execute Simulink Model with Set Output Noise
-
-    set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    %Set Output Noise as Zero
+    set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink;
-    out = sim('Paralyzed_Model_Simulink',time);
+    out = sim('SRS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
 
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from SRS Simulation (Simulink Model)
+    
     %Muscle Force
     force_simulink = out.Paralyzed_Model_Force;
 
-    % figure(figNum)
-    % figNum = figNum+1;
-    % plot(t_total,force_simulink)
-    % ax = gca;
-    % ax.FontSize = 15;
-    % xlabel('Time (s)','Fontsize',18)
-    % ylabel('Force (N)','Fontsize',18);
-    % title('Muscle Force','Fontsize',24)
-    % grid on
-
-    %Power Pectrum of Force
-    [Pxx_force,f_force] = pwelch(force_simulink,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-
-    %%
-    %Input Stimulus and Output Displacement
+    %Input Stimulus and Output Paralyzed Displacement
     input_stimulus = out.Paralyzed_Model_Stimulus;
     output_displacement_simulink = out.Paralyzed_Model_Displacement;
     t_simulink = out.tout;
 
-    %Zcur = [input_stimulus',output_displacement_simulink];
-    Zcur = [amplitude_modulation',output_displacement_simulink];
-
-    Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
-
+    %% Input/Output for Model Validation
     
-    %%
-    %Calculate Signal to Noise Ratio
+    Zcur = [amplitude_modulation',output_displacement_simulink];
+    Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
+    
+    %% Calculate Signal to Noise Ratio
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr = [noise_snr signal_to_noise];
-
     
-    %%
-    %Model Validation
+    %% Model Validation (LNL, Hammerstein, Wiener, or Linear IRF)
 
     if LNL_model == true
 
@@ -731,6 +552,7 @@ for trial = 1:num_trials_val
         end
         
     elseif Hammerstein_model == true
+        
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
         
         for model = 1:num_models_for_ident
@@ -742,6 +564,7 @@ for trial = 1:num_trials_val
         end
         
     elseif Weiner_model == true
+        
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
         
         for model = 1:num_models_for_ident
@@ -753,6 +576,7 @@ for trial = 1:num_trials_val
         end
         
     elseif Linear_IRF_model == true
+        
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
         
         for model = 1:num_models_for_ident
@@ -762,45 +586,10 @@ for trial = 1:num_trials_val
 
             validation_accuracy(trial,model) = V;
         end
-
-    else
-
-        set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-        Zcur_NLN = iddata(output_displacement_simulink,input_stimulus',Fs);
-        set(Zcur_NLN,'InputName','Input Stimulus','OutputName','Output Displacement');
-        
-        for model = 1:num_models_for_ident
-
-            [y,fit,ic] = compare(Zcur_NLN,NLN_all(1,model));
-
-            pred = y.y(:,1);
-            V = vaf(output_displacement_simulink,pred);
-            validation_accuracy(trial,model) = V; 
-
-            R = output_displacement_simulink - pred;
-
-            %Plots just the superimposed part with %VAF in the title
-            figure(model);
-            plot(t_total,pred);
-            hold on
-            plot(t_total, output_displacement_simulink)
-            ax = gca;
-            ax.FontSize = 18;
-            hold off
-            title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-            xlabel('Time (s)', 'Fontsize', 24)
-            ylabel('Displacement (m)', 'Fontsize', 24)
-            legend('Predicted', 'Observed', 'Fontsize', 20)
-            grid on
-
-        end
-
-    end
-    
+    end   
 end
 
-%% Plot Accuracy (%VAF) vs Average Frequency of identification signal
+%% Plot Accuracy (%VAF) vs Number of Movement Pulses in Identification Signal
 
 figNum = 100;
 

@@ -1,57 +1,92 @@
-%Paralyzed Model Test
+%% SRS Model Test (Model Validation)
 
 %Validate the estimated model by using it to predict the movements
 %generated in response to an input realization which is different than that
-%used to identify the model
+%used to identify the model. Will validate the specified model 
+%with a PRBS input signal and then a "Physiological" input signal. Plots the 
+%superimposed predicted and observed displacements, residual distribution, 
+%and residual spectrum 
 
 %INSTRUCTIONS: RUN Paralyzed_Model_Updated FIRST and THEN RUN THIS
 
+%When running the script, you need to provide the following input:
+%If both PRBS and Physiological Models were Identified in ERS_model,
+% 1. Which Identified Model Type do you want to Validate?
+%       Choose either the PRBS model or Phys model for validation
+%If not, will skip question 1 and default to the only model identified.
+% 2. Number of Validation Trials?
+%       Number of validation trials used to calculate VAF mean and std
+
+%% User Input Prompts
+
+% if compare_two_models == true
+%     prompt1 = 'Which Identified Model Type do you want to Validate? PRBS/Phys [PRBS]: ';
+%     str1 = input(prompt1,'s');
+%     if ~strcmp(str1,'PRBS') & ~strcmp(str1,'Phys') & ~isempty(str1)
+%         disp('Invalid Input')
+%         return
+%     elseif isempty(str1)
+%         str1 = 'PRBS';
+%     end
+%     
+%     if strcmp(str1,'PRBS')
+%         NHK = NHK1;
+%         disp('Validating Model Identified from PRBS Input')
+%     elseif strcmp(str1,'Phys')
+%         NHK = NHK2;
+%         disp('Validating Model Identified from Physiological Input')
+%     end
+% else
+%     NHK = NHK_all(1);
+%     disp(['Validating Model Identified from ' input_type ' Input'])
+% end
+
+prompt2 = 'Number of Validation Trials? 1-50 [1]: ';
+str2 = input(prompt2);
+if str2<1 | str2>50
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 1;
+end
+
 tStart = tic;
 
-%%
-%Set initial Parameters
+%% Set initial Parameters
+
 set_output_noise_power = 0;
-%noise_multiplier = 10;
 noise_snr = [];
 output_noise_power = [];
 
-
 %For Power Spectrums
 Fs = 1000; 
-Nfft = 10000;
+Nfft = 200000;
 
-simple_stimulus = false;
+%Type of Input
 sinusoidal_stimulus = false;
 PRBS_stimulus = true;
 % physiological_stimulus = true;
 
-%simple stimulus (Constant Amp square pulse with Modulated Frequency)
-desired_displacement_frequency = 0.5;
-simple_stimulus_time = 9.999;
-simple_stimulus_amplitude = 6.5;
-simple_stimulus_pulsewidth = 0.001;
-
-%Sinusoidal (Simple) Stimulus (Constant Freq Sine with Modulated Amp)
+%Sinusoidal (Simple) Signal Parameters (Constant Freq Sine with Modulated Amp)
 desired_displacement_frequency = 0.5;
 sine_stimulus_time = 9.999;
 sine_stimulus_frequency = 50;
 uniphasic = true;
 
-%PRBS Stimulus
+%PRBS Signal Parameters
 PRBS_stimulus_time = 480;
-variable_amplitude = true;
-N = PRBS_stimulus_time/10;
-M = 10000;
-PRBS_amplitude = 20; %mm
-% PRBS_stimulus_amplitude = 6.5;  %volts
+variable_amplitude = true;     %PRBS can either be constant amplitude or variable amplitude
+N = PRBS_stimulus_time/10;     %Number of times the amplitude randomly changes (For Variable Amplitude Only)
+M = 10000;                     %Number of each random value (For Variable Amplitude Only)
+PRBS_amplitude = 20;           %Amplitude of PRBS Signal (mm)
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 480;
-physiological_stimulus_max_amplitude = 0.02;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.8;                %Std of Frequency Distribution (Hz)
-W = 0.45;                  
-nf = physiological_stimulus_time/10;                  %number of random signal changes
+physiological_stimulus_max_amplitude = 0.02;    %"Physiological" Amplitude (m)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.8;                                      %Std of Frequency Distribution (Hz)
+W = 0.45;                                       %Width of signal pulse (seconds) 
+nf = physiological_stimulus_time/10;            %number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
@@ -68,225 +103,17 @@ if compare_two_models == true
     end
 end
 
-num_trials = 1;
+%Number of Validation Trials
+num_trials = str2;
 validation_accuracy = [];
 
 
-%%
+%% Generate Desired Displacement and Amplitude Modulation Signals for Model Validation
+
 for trial = 1:num_trials
     figNum = 50;
-    
-    %Create Analog Signal (Desired Movement)
-    if simple_stimulus == true
 
-        t_total = 0:0.001:simple_stimulus_time;
-        time = simple_stimulus_time;
-
-        AmplitudesRandom = makedist('Uniform','lower',0,'upper',0.01);
-        desired_displacement_amplitude = [];
-
-        for ii = 1:ceil(time)/2
-            rand_amp = random(AmplitudesRandom,1,1);
-            desired_displacement_amplitude = [desired_displacement_amplitude ones(1,2000)*rand_amp];
-        end
-        %desired_displacement_amplitude = [ones(1,2000)*0.002 ones(1,2000)*0.004 ones(1,2000)*0.006 ones(1,2000)*0.008 ones(1,2000)*0.01];
-
-        desired_displacement = max(-desired_displacement_amplitude.*square(2*pi*desired_displacement_frequency.*t_total),0);
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,desired_displacement)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Displacement (m)','Fontsize',18);
-    %     title('Desired Displacement','Fontsize',24)
-    %     grid on
-
-        %FFT of Desired Displacement
-        L = length(desired_displacement);
-
-        Y = fft(desired_displacement);
-        P1 = abs(Y/L);
-        Pxx1 = P1(1:L/2+1);
-        Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-        Pxx1 = Pxx1';
-
-        f1 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(f1(1:50,:),Pxx1(1:50,:)) 
-    %     title('FFT of Desired Displacement')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx1(f)|')
-
-        %Power Spectrum of Desired Displacement
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stim_amplitude = zeros(1,length(desired_displacement));
-        for i = 1:length(desired_displacement)
-            if desired_displacement(i) == 0
-                stim_amplitude(i) = 0;
-            else
-                stim_amplitude(i) = simple_stimulus_amplitude;
-            end
-        end
-
-        stim_frequency = desired_displacement*5000;  %Hz
-
-    %     input_stimulus = stim_amplitude.*square(2*pi*stim_frequency.*t_total);
-    %     input_stimulus = max(input_stimulus,0);
-    % 
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Volts (V)','Fontsize',18);
-    %     title('Stimulus Input','Fontsize',24)
-    %     grid on
-
-        D = [];
-        for j = 1:1001:length(desired_displacement)
-            if desired_displacement(j) == 0
-    %             D = [D zeros(1,1000)];
-                D = D;
-            else
-                g = 1/stim_frequency(j);
-                D = [D (j/1000+1/stim_frequency(j)):g:1+j/1000];
-            end
-        end
-
-        data = (simple_stimulus_amplitude*pulstran(t_total,D,@rectpuls,simple_stimulus_pulsewidth))';
-        input_stimulus = data';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Volts (V)','Fontsize',18);
-    %     title('Stimulus Input','Fontsize',24)
-    %     grid on
-
-        %FFT of Input Stimulus
-        L = length(input_stimulus);
-
-        Y = fft(input_stimulus);
-        P2 = abs(Y/L);
-        Pxx2 = P2(1:L/2+1);
-        Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-        Pxx2 = Pxx2';
-
-        f2 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum +1;
-    %     plot(f2(1:800,:),Pxx2(1:800,:)) 
-    %     title('FFT of Input Stimulus')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx2(f)|')
-
-        %Power Spectrum of Electrical Stimulus
-        %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-    %     g = 1/simple_stimulus_frequency;
-    %     D = (1:g:simple_stimulus_time)';     % pulse delay times
-    %     data = (simple_stimulus_amplitude*pulstran(t_total,D,@rectpuls,simple_stimulus_pulsewidth))';
-    %     
-    %     input_stimulus = [data; zeros(1000,1)]';
-    %     t_total = 0:0.001:simple_stimulus_time+1;
-    %     time = simple_stimulus_time+1;
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     
-         stimulus_simulink = [t_total' input_stimulus'];
-
-    elseif sinusoidal_stimulus == true
-
-        t_total = 0:0.001:sine_stimulus_time;
-        time = sine_stimulus_time;
-
-        AmplitudesRandom = makedist('Uniform','lower',0,'upper',0.01);
-        desired_displacement_amplitude = [];
-
-        for ii = 1:ceil(time)/2
-            rand_amp = random(AmplitudesRandom,1,1);
-            desired_displacement_amplitude = [desired_displacement_amplitude ones(1,2000)*rand_amp];
-        end
-
-        desired_displacement = max(-desired_displacement_amplitude.*square(2*pi*desired_displacement_frequency.*t_total),0);
-
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,desired_displacement);
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Desired Displacement (m)','Fontsize',18)
-    %     title('Analog Signal of Desired Displacement','Fontsize',24)
-    %     grid on
-
-        %FFT of Desired Displacement
-        L = length(desired_displacement);
-
-        Y = fft(desired_displacement);
-        P1 = abs(Y/L);
-        Pxx1 = P1(1:L/2+1);
-        Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-        Pxx1 = Pxx1';
-
-        f1 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(f1(1:50,:),Pxx1(1:50,:)) 
-    %     title('FFT of Desired Displacement')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx1(f)|')
-
-        %Power Spectrum of Desired Displacement
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stim_amplitude = desired_displacement*170;
-        if uniphasic == true
-            input_stimulus = max(stim_amplitude.*sin(2*pi*sine_stimulus_frequency.*t_total),0);
-        else
-            input_stimulus = stim_amplitude.*sin(2*pi*sine_stimulus_frequency.*t_total);
-        end
-
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Volts (v)','Fontsize',18);
-    %     title('Electrical Stimulus Input','Fontsize',24)
-    %     grid on
-
-        %FFT of Input Stimulus
-        L = length(input_stimulus);
-
-        Y = fft(input_stimulus);
-        P2 = abs(Y/L);
-        Pxx2 = P2(1:L/2+1);
-        Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-        Pxx2 = Pxx2';
-
-        f2 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum +1;
-    %     plot(f2(1:800,:),Pxx2(1:800,:)) 
-    %     title('FFT of Input Stimulus')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx2(f)|')
-
-        %Power Pectrum of Neural Input
-        %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stimulus_simulink = [t_total' input_stimulus'];
-
-    elseif PRBS_stimulus == true
+    if PRBS_stimulus == true
 
         t_total = 0:0.001:PRBS_stimulus_time;
         time = PRBS_stimulus_time;
@@ -324,22 +151,8 @@ for trial = 1:num_trials
         %For this example, specify the sample time as 1 second.
         u = iddata([],u,0.001);
 
-        %Plot, and examine the generated signal.
-        %plot(u);
-        %title('Non-Periodic Signal')
-
         U = (u.InputData)';
         desired_displacement = A.*U;
-
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,desired_displacement);
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Desired Displacement (m)','Fontsize',18)
-    %     title('Analog Signal of Desired Displacement','Fontsize',24)
-    %     grid on
 
         %FFT of Desired Displacement
         L = length(desired_displacement);
@@ -349,60 +162,15 @@ for trial = 1:num_trials
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
         Pxx1 = Pxx1';
-
         f1 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(f1(1:5000,:),Pxx1(1:5000,:)) 
-    %     title('FFT of Desired Displacement')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx1(f)|')
 
-        %Power Pectrum of Desired Displacement
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        %stim_frequency = desired_displacement*5000;  %Hz
         stim_frequency = 50;
-        %stim_amplitude = PRBS_stimulus_amplitude;
         stim_amplitude = desired_displacement*170;
 
-        %input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
         amplitude_modulation = stim_amplitude;
         amplitude_modulation_simulink = [t_total' amplitude_modulation'];
-
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Volts (v)','Fontsize',18);
-    %     title('Electrical Stimulus Input','Fontsize',24)
-    %     grid on
-
-        %FFT of Input Stimulus
-        L = length(input_stimulus);
-
-        Y = fft(input_stimulus);
-        P2 = abs(Y/L);
-        Pxx2 = P2(1:L/2+1);
-        Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-        Pxx2 = Pxx2';
-
-        f2 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum +1;
-    %     plot(f2(1:12000,:),Pxx2(1:12000,:)) 
-    %     title('FFT of Input Stimulus')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx2(f)|')
-
-        %Power Pectrum of Neural Input
-        %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stimulus_simulink = [t_total' input_stimulus'];
 
     else
 
@@ -413,34 +181,17 @@ for trial = 1:num_trials
         FrequenciesRandom_max = 2.21;
         FrequenciesRandom = truncate(FR,0,FrequenciesRandom_max);
         freq_distribution = random(FrequenciesRandom,10000,1);
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     histogram(freq_distribution,100)
-    %     title('Frequency Distribution')
-    %     xlabel('Frequency (Hz)')
 
         AR = makedist('Uniform','lower',0,'upper',physiological_stimulus_max_amplitude);  %Full Amplitude Range
         AmplitudesRandom = AR;
         amp_distribution = random(AmplitudesRandom,10000,1);
-        %figure(figNum)
-        %figNum = figNum+1;
-        %histogram(amp_distribution,100)
-        %title('Amplitude Distribution')
-        %xlabel('Amplitude (mm)')
-
-        %PWR = makedist('Normal','mu',0.001,'sigma',0.005);
-        %PulseWidthRandom = truncate(PWR,0.001,0.010);   % 1ms - 10 ms
-        %pw_distribution = random(PulseWidthRandom,10000,1);
-        %figure(107)
-        %histogram(pw_distribution,100)
-        %title('Pulse Width Distribution')
 
         desired_displacement= 0;
         Freq_test = [];
         Pulses_per_interval_test = [];
 
         for j = 1 : nf    
-            t  = 0 : 0.001 : t_interval;         % Time Samples
+            t  = 0 : 0.001 : t_interval;         % Time Intervals
 
             if j == 1
                 Freq = FrequenciesRandom_max;
@@ -449,8 +200,6 @@ for trial = 1:num_trials
                 Freq = random(FrequenciesRandom,1,1);
                 A = random(AmplitudesRandom,1,1);
             end
-
-            %W = random(PulseWidthRandom,1,1);
 
             if chance_of_zero == true
                 nums = randi([0 1], 1, 1);
@@ -480,16 +229,6 @@ for trial = 1:num_trials
         Pulses_per_interval_total = sum(Pulses_per_interval_test);
         Freq_test_average = sum(Freq_test)/length(Freq_test);
 
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,desired_displacement)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Desired Displacement (m)','Fontsize',18)
-    %     title('Analog Signal of Desired Displacement','Fontsize',24)
-    %     grid on
-
         %FFT of Desired Displacement
         L = length(desired_displacement);
 
@@ -497,376 +236,78 @@ for trial = 1:num_trials
         P1 = abs(Y/L);
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-    %     Pxx1 = Pxx1';
-
         f1 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(f1(1:5000,:),Pxx1(1:5000,:)) 
-    %     title('FFT of Desired Displacement')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx1(f)|')
-
-        %Power Pectrum of Desired Displacement
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        % figure(figNum)
-        % figNum = figNum+1;
-        % subplot(2,1,1)
-        % plot(t_total,desired_displacement)
-        % ax = gca;
-        % ax.FontSize = 14;
-        % xlabel('Time (s)','Fontsize',18)
-        % ylabel('Desired Displacement (m)','Fontsize',18)
-        % title('Analog Signal of Desired Movement','Fontsize',24)
-        % grid on
-
-        %Plot frequency spectrum
-        % subplot(2,1,2)
-        % semilogy(f1(1:6,1),Pxx1(1:6,1));
-        % ax = gca;
-        % ax.FontSize = 14;
-        % title('Power Spectrum of Desired Displacement','Fontsize',24);
-        % ylabel('PSD (log)','Fontsize',18); 
-        % xlabel('Frequency (Hz)','Fontsize',18);
-        % grid on;
 
         desired_displacement = desired_displacement';
 
         stim_amplitude = desired_displacement*170;  %mV
-    %     stim_amplitude = physiological_stimulus_amplitude;
-    %     stim_frequency = desired_displacement*5000;  %Hz
         stim_frequency = 50;
 
-        %input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
         amplitude_modulation = stim_amplitude;
         amplitude_modulation_simulink = [t_total' amplitude_modulation'];
 
-    %     figure(figNum)
-    %     figNum = figNum+1;
-    %     plot(t_total,input_stimulus)
-    %     ax = gca;
-    %     ax.FontSize = 15;
-    %     xlabel('Time (s)','Fontsize',18)
-    %     ylabel('Volts (V)','Fontsize',18);
-    %     title('Stimulus Input','Fontsize',24)
-    %     grid on
-
-        %FFT of Input Stimulus
-        L = length(input_stimulus);
-
-        Y = fft(input_stimulus);
-        P2 = abs(Y/L);
-        Pxx2 = P2(1:L/2+1);
-        Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-        Pxx2 = Pxx2';
-
-        f2 = (Fs*(0:(L/2))/L)';
-    %     figure(figNum)
-    %     figNum = figNum +1;
-    %     plot(f2(1:15000,:),Pxx2(1:15000,:)) 
-    %     title('FFT of Input Stimulus')
-    %     xlabel('f (Hz)')
-    %     ylabel('|Pxx2(f)|')
-
-        %Power Pectrum of Stimulus Input
-        %[Pxx2,f2] = pwelch(input_stimulus,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-        stimulus_simulink = [t_total' input_stimulus'];
-
     end
 
-
-    %%
-    %Execute Simulink Model with Set Output Noise
-
-    set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    %% Execute SRS Simulation (Simulink Model)
+    
+    %Set Output Noise as zero
+    set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink;
-    out = sim('Paralyzed_Model_Simulink',time);
+    out = sim('SRS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
 
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from SRS Simulation (Simulink Model)
 
     %Muscle Force
     force_simulink = out.Paralyzed_Model_Force;
 
-    % figure(figNum)
-    % figNum = figNum+1;
-    % plot(t_total,force_simulink)
-    % ax = gca;
-    % ax.FontSize = 15;
-    % xlabel('Time (s)','Fontsize',18)
-    % ylabel('Force (N)','Fontsize',18);
-    % title('Muscle Force','Fontsize',24)
-    % grid on
-
-    %Power Pectrum of Force
-    force_simulink_zero = force_simulink - mean(force_simulink);
-    [Pxx_force,f_force] = pwelch(force_simulink_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
-
-
-    %%
-    %Output Stimulus & Displacement
+    %Electrical Stimulus
     input_stimulus = out.Paralyzed_Model_Stimulus;
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
-    t_simulink = out.tout;
-
-    % Zcur = [input_stimulus',output_displacement_simulink];
-    % Zcur = [input_stimulus,output_displacement_simulink];
-    Zcur = [amplitude_modulation',output_displacement_simulink];
-
-    Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
-
-    % figure(figNum)
-    % figNum = figNum+1;
-    % subplot(2,1,1)
-    % plot(t_total,input_stimulus)
-    % ax = gca;
-    % ax.FontSize = 15;
-    % xlabel('Time (s)','Fontsize',18)
-    % ylabel('Stimulus (V)','Fontsize',18);
-    % title('(a) Stimulus Input','Fontsize',24)
-    % grid on
-    % 
-    % subplot(2,1,2)
-    % plot(t_total,output_displacement_simulink)
-    % ax = gca;
-    % ax.FontSize = 15;
-    % xlabel('Time (s)','Fontsize',18)
-    % ylabel('Displacement (m)','Fontsize',18);
-    % title('(b) Output Displacement','Fontsize',24)
-    % grid on
-
-    %%
-    %Plot Desired Displacement, Electrical Stimulus, Muscle Force and Output
-    %Displacement
-
+    
+    %FFT of Electrical Stimulus
     L = length(input_stimulus);
 
     Y = fft(input_stimulus);
     P2 = abs(Y/L);
     Pxx2 = P2(1:L/2+1);
     Pxx2(2:end-1) = 2*Pxx2(2:end-1);
-
     f2 = (Fs*(0:(L/2))/L)';
+    
+    %Paralyzed Displacement Output
+    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    t_simulink = out.tout;
 
-    % figure(figNum)
-    % figNum = figNum+1;
-    % subplot(2,2,1)
-    % plot(t_total,desired_displacement);
-    % ax = gca;
-    % ax.FontSize = 12;
-    % xlabel('Time (s)','Fontsize',15)
-    % ylabel('Desired Displacement (m)','Fontsize',15)
-    % title('(a) Analog Signal of Desired Displacement','Fontsize',15)
-    % grid on
-    % 
-    % subplot(2,2,2)
-    % plot(f1(1:50,1),Pxx1(1:50,1));
-    % ax = gca;
-    % ax.FontSize = 12;
-    % title('(b) FFT of Desired Displacement','Fontsize',15);
-    % ylabel('Displacement (m)','Fontsize',15); 
-    % xlabel('Frequency (Hz)','Fontsize',15);
-    % grid on;
-    % 
-    % subplot(2,2,3)
-    % plot(t_total,input_stimulus)
-    % ax = gca;
-    % ax.FontSize = 12;
-    % xlabel('Time (s)','Fontsize',15)
-    % ylabel('Amplitude (V)','Fontsize',15);
-    % title('(c) Electrical Stimulus Input','Fontsize',15)
-    % grid on
-    % 
-    % subplot(2,2,4)
-    % plot(f2(1:800,1),Pxx2(1:800,1));
-    % ax = gca;
-    % ax.FontSize = 12;
-    % title('(d) FFT of Stimulus Input','Fontsize',15);
-    % ylabel('Amplitude (V)','Fontsize',15); 
-    % xlabel('Frequency (Hz)','Fontsize',15);
-    % grid on;
-    % 
-    % figure(figNum)
-    % figNum = figNum+1;
-    % subplot(2,2,1)
-    % plot(t_total,input_stimulus)
-    % ax = gca;
-    % ax.FontSize = 12;
-    % xlabel('Time (s)','Fontsize',15)
-    % ylabel('Amplitude (V)','Fontsize',15);
-    % title('(a) Electrical Stimulus Input','Fontsize',15)
-    % grid on
-    % 
-    % subplot(2,2,2)
-    % plot(f2(1:800,1),Pxx2(1:800,1));
-    % ax = gca;
-    % ax.FontSize = 12;
-    % title('(b) FFT of Stimulus Input','Fontsize',15);
-    % ylabel('Amplitude (V)','Fontsize',15); 
-    % xlabel('Frequency (Hz)','Fontsize',15);
-    % grid on;
-    % 
-    % subplot(2,2,3)
-    % plot(t_total,force_simulink)
-    % ax = gca;
-    % ax.FontSize = 12;
-    % xlabel('Time (s)','Fontsize',15)
-    % ylabel('Force (N)','Fontsize',15);
-    % title('(c) Muscle Force','Fontsize',15)
-    % grid on
-    % 
-    % subplot(2,2,4)
-    % plot(f_force(1:50,1),Pxx_force(1:50,1));
-    % ax = gca;
-    % ax.FontSize = 12;
-    % title('(d) FFT of Muscle Force','Fontsize',15);
-    % ylabel('Force (N)','Fontsize',15); 
-    % xlabel('Frequency (Hz)','Fontsize',15);
-    % grid on;
+    %% Input/Output for Model Validation
+    
+    Zcur = [amplitude_modulation',output_displacement_simulink];
+    Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
 
-%     figure(figNum)
-%     figNum = figNum+1;
-% 
-%     subplot(3,2,1)
-%     plot(t_total,desired_displacement);
-%     ax = gca;
-%     ax.FontSize = 12;
-%     xlabel('Time (s)','Fontsize',12)
-%     ylabel('Displacement (m)','Fontsize',12)
-%     title('(a) Analog Signal of Desired Displacement','Fontsize',14)
-%     grid on
-% 
-%     subplot(3,2,2)
-%     plot(f1(1:5000,1),Pxx1(1:5000,1));
-%     ax = gca;
-%     ax.FontSize = 12;
-%     title('(b) FFT of Desired Displacement','Fontsize',14);
-%     ylabel('Displacement (m)','Fontsize',12); 
-%     xlabel('Frequency (Hz)','Fontsize',12);
-%     grid on;
-% 
-%     subplot(3,2,3)
-%     plot(t_total,input_stimulus)
-%     ax = gca;
-%     ax.FontSize = 12;
-%     xlabel('Time (s)','Fontsize',12)
-%     ylabel('Amplitude (V)','Fontsize',12);
-%     title('(c) Electrical Stimulus Input','Fontsize',14)
-%     grid on
-% 
-%     subplot(3,2,4)
-%     plot(f2(1:12000,1),Pxx2(1:12000,1));
-%     ax = gca;
-%     ax.FontSize = 12;
-%     title('(d) FFT of Stimulus Input','Fontsize',14);
-%     ylabel('Amplitude (V)','Fontsize',12); 
-%     xlabel('Frequency (Hz)','Fontsize',12);
-%     grid on;
-% 
-%     subplot(3,2,5)
-%     plot(t_total,force_simulink)
-%     ax = gca;
-%     ax.FontSize = 12;
-%     xlabel('Time (s)','Fontsize',12)
-%     ylabel('Force (N)','Fontsize',12);
-%     title('(e) Muscle Force','Fontsize',14)
-%     grid on
-% 
-%     subplot(3,2,6)
-%     plot(t_total,output_displacement_simulink)
-%     ax = gca;
-%     ax.FontSize = 12;
-%     xlabel('Time (s)','Fontsize',12)
-%     ylabel('Displacement (m)','Fontsize',12);
-%     title('(f) Output Dispalcement','Fontsize',14)
-%     grid on
-
-    %%
-    %Calculate Signal to Noise Ratio
+    %% Calculate Signal to Noise Ratio
+    
+    %Get noise from SRS Simulation
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr = [noise_snr signal_to_noise];
 
-
-    %%
-    %Model Validation
+    %% Model Validation (LNL, Hammerstein, Wiener, or Linear IRF)
 
     if LNL_model == true
 
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-%         figure(figNum)
-%         figNum = figNum+1; 
-%         plot(LNL); 
 
         figure(figNum)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(LNL,Zcur);
 
         validation_accuracy = [validation_accuracy V];
-        
         pred = double(yp);
-
-        %Plots just the superimposed part with %VAF in the title
-%         figure(figNum);
-%         figNum = figNum+1;
-%         pred = double(yp);
-%         plot(t_total,pred);
-%         hold on
-%         plot(t_total, output_displacement_simulink)
-%         ax = gca;
-%         ax.FontSize = 18;
-%         hold off
-%         title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-%         xlabel('Time (s)', 'Fontsize', 24)
-%         ylabel('Displacement (m)', 'Fontsize', 24)
-%         legend('Predicted', 'Observed', 'Fontsize', 20)
-
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-%         figure(figNum)
-%         figNum = figNum+1;
-%         subplot(2,2,[1 2])
-%         plot(double(R))
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(a) Residuals from LNL Identification','Fontsize',20)
-%         xlabel('Time (s)','Fontsize',20)
-%         ylabel('Displacement (m)','Fontsize',20)
-%         grid on
-% 
-%         subplot(2,2,3)
-%     %     p = pdf(R);
-%     %     plot(p)
-%         histogram(double(R))
-%         ax = gca;
-%         ax.FontSize = 15;
-%         xlabel('Displacement (m)','Fontsize',20)
-%         ylabel('Density','Fontsize',20)
-%         title('(b) Residual Distribution','Fontsize',20)
-%         grid on
-% 
-%         S = spect(R);
-%         subplot(2,2,4)
-%         S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Residual Power Spectrum','Fontsize',20);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
 
         %Plot Sumperimposed Accuracy, Residual PDF and Spectrum
         figure(figNum)
@@ -884,8 +325,6 @@ for trial = 1:num_trials
         legend('Predicted', 'Observed', 'Fontsize', 15)
 
         subplot(2,2,3)
-    %     p = pdf(R);
-    %     plot(p)
         histogram(double(R))
         ax = gca;
         ax.FontSize = 15;
@@ -910,67 +349,12 @@ for trial = 1:num_trials
 
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
 
-%         figure(figNum)
-%         figNum = figNum+1; 
-%         plot(Hammerstein);
-
         figure(figNum)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(Hammerstein,Zcur);
 
         validation_accuracy = [validation_accuracy V];
-        
         pred = double(yp);
-
-        %Plots just the superimposed part with %VAF in the title
-%         figure(figNum);
-%         figNum = figNum+1;
-%         pred = double(yp);
-%         plot(t_total,pred);
-%         hold on
-%         plot(t_total, output_displacement_simulink)
-%         ax = gca;
-%         ax.FontSize = 18;
-%         hold off
-%         title(['Superimposed (Hammerstein), VAF = ' num2str(V) '%'], 'Fontsize', 28)
-%         xlabel('Time (s)', 'Fontsize', 24)
-%         ylabel('Displacement (m)', 'Fontsize', 24)
-%         legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-%         figure(figNum)
-%         figNum = figNum+1;
-%         subplot(2,2,[1 2])
-%         plot(R)
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(a) Residuals from Hammerstein Identification','Fontsize',18)
-%         xlabel('Time (s)','Fontsize',20)
-%         ylabel('Displacement (m)','Fontsize',20)
-%         grid on
-% 
-%         subplot(2,2,3)
-%     %     p = pdf(R);
-%     %     plot(p)
-%         histogram(double(R))
-%         ax = gca;
-%         ax.FontSize = 15;
-%         xlabel('Displacement (m)','Fontsize',20)
-%         ylabel('Density','Fontsize',20)
-%         title('(b) Residual Distribution','Fontsize',18)
-%         grid on
-% 
-%         S = spect(R);
-%         subplot(2,2,4)
-%         S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Residual Power Spectrum','Fontsize',18);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
 
         %Plot Sumperimposed Accuracy, Residual PDF and Spectrum
         figure(figNum)
@@ -988,8 +372,6 @@ for trial = 1:num_trials
         legend('Predicted', 'Observed', 'Fontsize', 15)
 
         subplot(2,2,3)
-    %     p = pdf(R);
-    %     plot(p)
         histogram(double(R))
         ax = gca;
         ax.FontSize = 15;
@@ -1010,70 +392,16 @@ for trial = 1:num_trials
         xlabel('Frequency (Hz)','Fontsize',20);
         grid on
 
-
     elseif Weiner_model == true
 
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-%         figure(figNum)
-%         figNum = figNum+1; 
-%         plot(Weiner);
 
         figure(figNum)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(Weiner,Zcur);
 
-        validation_accuracy = [validation_accuracy V];
-        
+        validation_accuracy = [validation_accuracy V];    
         pred = double(yp);
-
-        %Plots just the superimposed part with %VAF in the title
-%         figure(figNum);
-%         figNum = figNum+1;
-
-%         plot(t_total,pred);
-%         hold on
-%         plot(t_total, output_displacement_simulink)
-%         ax = gca;
-%         ax.FontSize = 18;
-%         hold off
-%         title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-%         xlabel('Time (s)', 'Fontsize', 24)
-%         ylabel('Displacement (m)', 'Fontsize', 24)
-%         legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-%         figure(figNum)
-%         figNum = figNum+1;
-%         subplot(2,2,[1 2])
-%         plot(R)
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(a) Residuals from Wiener Identification','Fontsize',18)
-%         xlabel('Time (s)','Fontsize',20)
-%         ylabel('Displacement (m)','Fontsize',20)
-%         grid on
-% 
-%         subplot(2,2,3)
-%         histogram(double(R))
-%         ax = gca;
-%         ax.FontSize = 15;
-%         xlabel('Displacement (m)','Fontsize',20)
-%         ylabel('Density','Fontsize',20)
-%         title('(b) Residual Distribution','Fontsize',18)
-%         grid on
-% 
-%         S = spect(R);
-%         subplot(2,2,4)
-%         S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Residual Power Spectrum','Fontsize',18);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
         
         %Plot Sumperimposed Accuracy, Residual PDF and Spectrum
         figure(figNum)
@@ -1091,8 +419,6 @@ for trial = 1:num_trials
         legend('Predicted', 'Observed', 'Fontsize', 15)
 
         subplot(2,2,3)
-    %     p = pdf(R);
-    %     plot(p)
         histogram(double(R))
         ax = gca;
         ax.FontSize = 15;
@@ -1124,73 +450,17 @@ for trial = 1:num_trials
         xlabel('Frequency (Hz)','Fontsize',16);
         grid on
 
-
     elseif Linear_IRF_model == true
 
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-%         figure(figNum)
-%         figNum = figNum+1; 
-%         plot(IRF_model); 
 
         figure(figNum)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(IRF_model,Zcur);
 
-        validation_accuracy = [validation_accuracy V];
-        
+        validation_accuracy = [validation_accuracy V];   
         pred = double(yp);
 
-        %Plots just the superimposed part with %VAF in the title
-%         figure(figNum);
-%         figNum = figNum+1;
-
-%         plot(t_total,pred);
-%         hold on
-%         plot(t_total, output_displacement_simulink)
-%         ax = gca;
-%         ax.FontSize = 18;
-%         hold off
-%         title(['Superimposed (IRF Model), VAF = ' num2str(V) '%'], 'Fontsize', 28)
-%         xlabel('Time (s)', 'Fontsize', 24)
-%         ylabel('Displacement (m)', 'Fontsize', 24)
-%         legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-%         figure(figNum)
-%         figNum = figNum+1;
-%         subplot(2,2,[1 2])
-%         plot(R)
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(a) Residuals from IRF Identification','Fontsize',18)
-%         xlabel('Time (s)','Fontsize',20)
-%         ylabel('Displacement (m)','Fontsize',20)
-%         grid on
-% 
-%         subplot(2,2,3)
-%     %     p = pdf(R);
-%     %     plot(p)
-%         histogram(double(R))
-%         ax = gca;
-%         ax.FontSize = 15;
-%         xlabel('Displacement (m)','Fontsize',20)
-%         ylabel('Density','Fontsize',20)
-%         title('(b) Residual Distribution','Fontsize',18)
-%         grid on
-% 
-%         S = spect(R);
-%         subplot(2,2,4)
-%         S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Residual Power Spectrum','Fontsize',18);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
-
         %Plot Sumperimposed Accuracy, Residual PDF and Spectrum
         figure(figNum)
         figNum = figNum+1;
@@ -1207,122 +477,6 @@ for trial = 1:num_trials
         legend('Predicted', 'Observed', 'Fontsize', 15)
 
         subplot(2,2,3)
-    %     p = pdf(R);
-    %     plot(p)
-        histogram(double(R))
-        ax = gca;
-        ax.FontSize = 15;
-        xlabel('Displacement (m)','Fontsize',20)
-        ylabel('Density','Fontsize',20)
-        title('(b) Residual Distribution','Fontsize',20)
-        grid on
-
-        S = spect(R);
-        subplot(2,2,4)
-        S_frequency = 0.0556:0.0556:0.0556*length(S);
-        subplot(2,2,4)
-        semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-        ax = gca;
-        ax.FontSize = 15;
-        title('(c) Residual Power Spectrum','Fontsize',20);
-        ylabel('PSD (log)','Fontsize',20); 
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on
-
-    else
-
-        set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-    %     Zcur_NLN_input = iddata(input_stimulus',Fs);
-    %     set(Zcur_NLN_input,'InputName','Input Stimulus');
-    %     pred = sim(NLN,Zcur_NLN);
-
-        Zcur_NLN = iddata(output_displacement_simulink,input_stimulus',Fs);
-        set(Zcur_NLN,'InputName','Input Stimulus','OutputName','Output Displacement');
-
-%         plot(NLN);
-
-        figure(figNum)
-        figNum = figNum+1; 
-        compare(Zcur_NLN,NLN,'r');
-        grid on
-
-        [y,fit,ic] = compare(Zcur_NLN,NLN);
-
-        pred = y.y(:,1);
-        V = vaf(output_displacement_simulink,pred);
-        validation_accuracy = [validation_accuracy V]; 
-
-        R = output_displacement_simulink - pred;
-
-        %Plots just the superimposed part with %VAF in the title
-%         figure(figNum);
-%         figNum = figNum+1;
-%         plot(t_total,pred);
-%         hold on
-%         plot(t_total, output_displacement_simulink)
-%         ax = gca;
-%         ax.FontSize = 18;
-%         hold off
-%         title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-%         xlabel('Time (s)', 'Fontsize', 24)
-%         ylabel('Displacement (m)', 'Fontsize', 24)
-%         legend('Predicted', 'Observed', 'Fontsize', 20)
-%         grid on
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-%         figure(figNum)
-%         figNum = figNum+1;
-%         subplot(2,2,[1 2])
-%         plot(R)
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(a) Residuals from NLN Identification','Fontsize',20)
-%         xlabel('Time (s)','Fontsize',20)
-%         ylabel('Displacement (m)','Fontsize',20)
-%         grid on
-% 
-%         subplot(2,2,3)
-%     %     p = pdf(R);
-%     %     plot(p)
-%         histogram(R)
-%         ax = gca;
-%         ax.FontSize = 15;
-%         xlabel('Displacement (m)','Fontsize',20)
-%         ylabel('Density','Fontsize',20)
-%         title('(b) Residual Distribution','Fontsize',20)
-%         grid on
-% 
-%         S = spect(R);
-%         subplot(2,2,4)
-%         S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Power Spectrum of Residuals','Fontsize',20);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
-
-        %Plot Sumperimposed Accuracy, Residual PDF and Spectrum
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,2,[1 2])
-        plot(t_total,pred);
-        hold on
-        plot(t_total, output_displacement_simulink)
-        ax = gca;
-        ax.FontSize = 15;
-        hold off
-        title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 20)
-        xlabel('Time (s)', 'Fontsize', 20)
-        ylabel('Displacement (m)', 'Fontsize', 20)
-        legend('Predicted', 'Observed', 'Fontsize', 15)
-
-        subplot(2,2,3)
-    %     p = pdf(R);
-    %     plot(p)
         histogram(double(R))
         ax = gca;
         ax.FontSize = 15;
@@ -1347,7 +501,7 @@ for trial = 1:num_trials
     
 end
 
-%Calculate validation mean and Std
+%% Calculate validation mean and Std
 validation_accuracy_mean = mean(validation_accuracy)
 validation_accuracy_std = std(validation_accuracy)
 
