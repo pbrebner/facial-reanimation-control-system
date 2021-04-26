@@ -1,8 +1,18 @@
 %% EMG Response System (ERS)
 
 %Identifies the ERS model with simulated data from the ERS simulation, and 
-%plots the results. Can identify models based on the PRBS input and the 
+%plots the results. Can identify models based on a Simple Input, PRBS input or a 
 %"Physiological" input.
+
+%The Simple input is a 10 second signal that includes a series of four basic 
+%movement pulses of random amplitude
+
+%The PRBS input is a pseudorandom binary sequence, modified to have a
+%variable amplitude that randomly changes every 10 seconds
+
+%The "Physiological input was created to simulate rat movements in an
+%experimental trial. In includes trains of square pulses with amplitude and
+%frequency that randomly change every 10 seconds
 
 %When running the script, you need to provide the following input:
 % 1. Compare two models (PRBS & Physiological)? Y/N (Default is Y)
@@ -53,6 +63,8 @@ if str1 == false
         PRBS_movement = false;
     end      
 end
+
+input_type = str2;
 
 tStart = tic;
 
@@ -127,10 +139,10 @@ for signal = 1:length(PRBS_movement)
         figNum = figNum+1;
         plot(t_total,desired_displacement);
         ax = gca;
-        ax.FontSize = 26;
-        xlabel('Time (s)','Fontsize',32)
-        ylabel('Desired Displacement (m)','Fontsize',32)
-        title('Analog Signal of Desired Displacement','Fontsize',36)
+        ax.FontSize = 20;
+        xlabel('Time (s)','Fontsize',26)
+        ylabel('Desired Displacement (m)','Fontsize',26)
+        title('Analog Signal of Desired Displacement','Fontsize',28)
         grid on
         
         %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
@@ -372,7 +384,8 @@ for signal = 1:length(PRBS_movement)
         grid on
         
         subplot(2,2,2)
-        semilogy(f1a(1:11,1),Pxx1a(1:11,1),f1b(1:11,1),Pxx1b(1:11,1),f1c(1:11,1),Pxx1c(1:11,1),f1d(1:11,1),Pxx1d(1:11,1),'Linewidth',1);
+        semilogy(f1a(1:11,1),Pxx1a(1:11,1),f1b(1:11,1),Pxx1b(1:11,1),f1c(1:11,1),...
+            Pxx1c(1:11,1),f1d(1:11,1),Pxx1d(1:11,1),'Linewidth',1);
         ax = gca;
         ax.FontSize = 12;
         title('(b) Power Spectrum of Displacement','Fontsize',14);
@@ -442,6 +455,8 @@ for signal = 1:length(PRBS_movement)
         grid on
         
         subplot(2,2,4)
+        semilogy(f_force1(1:11,1),Pxx_force1(1:11,1),f_force2(1:11,1),Pxx_force2(1:11,1),...
+            f_force3(1:11,1),Pxx_force3(1:11,1),f_force4(1:11,1),Pxx_force4(1:11,1),'Linewidth',1);
         ax = gca;
         ax.FontSize = 12;
         title('(d) Power Spectrum of Muscle Force','Fontsize',14);
