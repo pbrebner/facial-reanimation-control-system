@@ -1,7 +1,9 @@
-%% ERS Model Test (Accuracy vs Ouput Noise)
+%% ERS Model Test for Accuracy vs Ouput Noise (Measurement Error)
 
 %Accuracy vs Noise with Constant Record Length
-%Iteratively increases the output noise(measurement error) in simulink model
+%Iteratively increases the output noise(measurement error) in simulink
+%model, identifies models with this noisy signal, validates the models,
+%and plots the results
 
 %Identifies one set of models for each signal type (PRBS and Physiological)
 %with increasing levels of noise for each model (Identifies 2x 'noise_level_iters' models)
