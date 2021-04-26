@@ -1,13 +1,15 @@
 %% ERS Model Test for Identification Signal Amplitude and Record Length
 
+%Runs each test seperately
 %Can Evaluate the Identified Models based on the:
 % 1. Amplitude of the PRBS Input used for Identification
 % 2. Record Length of PRBS Input used for Identification
 
-%Identifies models with one set of PRBS signals and then validates with multiple
-%different physiological signals (Since PRBS is deterministic, the
-%identifcation results do not vary much so multiple identification trials are 
-%unnecessary)
+%Identifies models with one set of PRBS signals, each with a different max 
+%amplitude or record length (depending on test selected), and then validates
+%with multiple realizations of the physiological signals (Since PRBS is 
+%deterministic, the identifcation results do not vary much so multiple 
+%identification trials to get a identification VAF mean and std are unnecessary)
 
 %When running the script, you need to provide the following input:
 % 1. Type of Model Test?
@@ -55,7 +57,7 @@ set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
 
-%PRBS Signal Parameters
+%PRBS Signal Parameters (Dependent on the test selected)
 if variable_time == true
     PRBS_movement_time = [1:1:15 20:5:25 30:15:90];
 else
@@ -82,7 +84,7 @@ num_models_for_ident = length(PRBS_amplitude);
 
 num_trials = str2;
 
-%% Generate Desired Displacement for Identification
+%% Generate Desired Displacement for Model Identification
 
 for record_length = 1:num_record_lengths
     
@@ -127,6 +129,7 @@ for record_length = 1:num_record_lengths
         desired_displacement = A.*U;
         
         %% Create Neural Input for ERS Simulation
+        
         %Create Frequency and Amplitude Parameters of Neural Input based on
         %Desired Displacement
         Amplitude = desired_displacement*100;    %mV
@@ -163,6 +166,7 @@ for record_length = 1:num_record_lengths
         Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
         
         %% Calculate Signal to Noise Ratio
+        
         output_noise_simulink = out.Output_Noise;
 
         signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
@@ -197,13 +201,14 @@ for record_length = 1:num_record_lengths
 end
 
 %% Set Initial Parameters for Model Validation
+
 noise_snr = [];
 set_output_noise_power = 0;
 output_noise_power = [];
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
-physiological_movement_max_amplitude = 0.01;
+physiological_movement_max_amplitude = 0.01;    %Physiological Signal max amplitude (m)
 fr = 0.1;                                       %Frequency distribution mean (Hz) (Max is 1.8 Hz)
 sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;                                       %Width of signal pulse (seconds)
@@ -233,7 +238,7 @@ for trial = 1:num_trials
     Pulses_per_interval_test = [];
 
     for j = 1 : nf    
-        t  = 0 : 0.001 : t_interval;         % Time Samples
+        t  = 0 : 0.001 : t_interval;         % Time Intervals
 
         if j == 1
             Freq = FrequenciesRandom_max;
@@ -274,6 +279,7 @@ for trial = 1:num_trials
     desired_displacement = desired_displacement';
     
     %% Create Neural Input for ERS Simulation
+    
     %Create Frequency and Amplitude Parameters of Neural Input based on
     %Desired Displacement
     Amplitude = desired_displacement*100;    %mV
@@ -320,9 +326,10 @@ for trial = 1:num_trials
     num_models = max(num_models_for_ident, num_record_lengths);
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
     
+    %Validates the current Physioloigcal Signal on all identified models
     for model = 1:num_models
         
-        figure(2)
+        figure(10000)
         [R, V, yp] = nlid_resid(NHK_all(model),Zcur);
         
         validation_accuracy(trial,model) = V;
@@ -332,7 +339,7 @@ for trial = 1:num_trials
 end
 
 %% Plot Accuracy (%VAF)
-figNum = 600;
+figNum = 300;
 
 if variable_signal == true
     figure(figNum)
