@@ -1,15 +1,16 @@
-%% ERS Model Test for Number of Movement Pulses of "Physiological" Movement
+%% ERS Model Test for Number of Movement Pulses of "Physiological" Signal used for Identification
 
 %Evaluates the Model based on the number of movement pulses of the 
-%Physiological Input used for identification. Plots the identifcation
+%"Physiological" Input used for identification. Plots the identifcation
 %accuracy vs number of movement pulses and validation accuracy vs number of
 %movement pulses
 
-%The script generates physiological desired displacement signals, starting
-%at 1 movement pulse and iteratively increases the number of movements by
-%1 for subsequent signals. A specified number of Models are identified for 
+%The script generates a set of physiological desired displacement signals, 
+%starting at 1 movement pulse and iteratively increases the number of movements 
+%by 1 for subsequent signals. A specified number of Models are identified for 
 %each of these signals. A set of these models are then validated with 
-%typical "physiological" movements for a specified number of trials
+%typical "physiological" movements for a specified number of trials to
+%calculate the validation VAF mean and std.
 
 %When running the script, you need to provide the following input:
 % 1. Maximum number of Movement Pulses?
@@ -17,7 +18,9 @@
 %       and iteratively increase by 1 until the maximum number of movement
 %       pulse is reached
 % 2. Number of Identification Trials?
-%       Number of model identification trials to calculate VAF mean and std
+%       Number of model identification trials to calculate VAF mean and
+%       std for model identification. Increasing this value has a large 
+%       impact on how long the script needs to run 
 % 3. Number of Validation Trials?
 %       Number of  model validation trials to calculate VAF mean and std
 
@@ -35,13 +38,13 @@ elseif isempty(str1)
     str1 = 20;
 end
 
-prompt2 = 'Number of Identification Trials? 1-20 [10]: ';
+prompt2 = 'Number of Identification Trials? 1-20 [1]: ';
 str2 = input(prompt2);
 if str2<1 | str2>20
     disp('Invalid Input')
     return
 elseif isempty(str2)
-    str2 = 10;
+    str2 = 1;
 end
 
 prompt3 = 'Number of Validation Trials? 1-50 [30]: ';
@@ -439,9 +442,9 @@ for trial = 1:num_trials_val
 
 end
 
-%% Plot Accuracy (%VAF) vs Average Frequency of identification signal
+%% Plot Accuracy (%VAF) vs Number of Movement Pulses in Identification Signal
 
-figNum = 100;
+figNum = 200;
 
 if use_fr == true
     figure(figNum)
@@ -467,9 +470,9 @@ if use_fr == true
 else
     
     identification_accuracy = max(0, identification_accuracy);
-    identification_accuracy_mean = mean(identification_accuracy);
-    identification_accuracy_var = var(identification_accuracy);
-    identification_accuracy_std = std(identification_accuracy);
+    identification_accuracy_mean = mean(identification_accuracy,1);
+    identification_accuracy_var = var(identification_accuracy,0,1);
+    identification_accuracy_std = std(identification_accuracy,0,1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -487,9 +490,9 @@ else
     grid on
     
     validation_accuracy = max(0, validation_accuracy);
-    validation_accuracy_mean = mean(validation_accuracy);
-    validation_accuracy_var = var(validation_accuracy);
-    validation_accuracy_std = std(validation_accuracy);
+    validation_accuracy_mean = mean(validation_accuracy,1);
+    validation_accuracy_var = var(validation_accuracy,0,1);
+    validation_accuracy_std = std(validation_accuracy,0,1);
     
     figure(figNum)
     figNum = figNum+1;
