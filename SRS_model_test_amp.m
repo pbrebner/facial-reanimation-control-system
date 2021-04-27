@@ -35,7 +35,7 @@ elseif isempty(str1)
 end
 
 prompt2 = 'Type of Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
-str2 = input(prompt1,'s');
+str2 = input(prompt2,'s');
 if ~strcmp(str2,'LNL') & ~strcmp(str2,'Hamm') & ~strcmp(str2,'Wiener') & ~strcmp(str2,'IRF') & ~isempty(str2)
     disp('Invalid Input')
     return
@@ -80,7 +80,7 @@ variable_amplitude = false;
 N = PRBS_stimulus_time/10;
 M = 10000;
 if variable_signal == true
-    PRBS_amplitude = 4.5:0.5:9.5;
+    PRBS_amplitude = 5.5:0.5:20;
 else
     PRBS_amplitude = 20;
 end
@@ -292,9 +292,9 @@ physiological_stimulus_time = 180;
 physiological_stimulus_max_amplitude = 0.02;
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
-W = 0.45;                  
+W = 0.45;                                       %Width of Movement Pulse (seconds)
 nf = physiological_stimulus_time/10;            %Number of random signal changes
-t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
+t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 %% Generate Desired Displacement and Amplitude Modulation Signal for Model Validation
