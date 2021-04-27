@@ -81,9 +81,9 @@ physiological_stimulus_time = 180;
 physiological_stimulus_max_amplitude = 0.01;
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
-W = 0.45;                  
+W = 0.45;                                       %Width of signal pulse (seconds)
 nf = physiological_stimulus_time/10;            %Number of random signal changes
-t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
+t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 %Type of Model
@@ -103,14 +103,8 @@ elseif strcmp(str1,'IRF')
 end
 
 %Initialize Models
-LNL_all_temp = [];
-LNL_all = [];
-Hammerstein_all_temp = [];
-Hammerstein_all = [];
-Weiner_all_temp = [];
-Weiner_all = [];
-IRF_model_all_temp = [];
-IRF_model_all = [];
+SRS_models_temp = [];
+SRS_models = [];
 
 Zcur_all_temp = [];
 Zcur_all = [];
@@ -140,7 +134,7 @@ end
 validation_frequency = [];
 validation_pulses_total = [];
 
-%% Generate the Desired Displacement Signals for Model Identification
+%% Generate the Desired Displacement and Amplitude Modulation Signals for Model Identification
 
 for trial = 1:num_trials_ident
     
@@ -172,7 +166,7 @@ for trial = 1:num_trials_ident
         if use_fr == true
 
             for j = 1 : nf    
-                t  = 0 : 0.001 : t_interval;         % Time Samples
+                t  = 0 : 0.001 : t_interval;         % Time Intervals
 
                 if j == 1
                     Freq = FrequenciesRandom_max;
@@ -252,7 +246,8 @@ for trial = 1:num_trials_ident
 
         stim_amplitude = desired_displacement*170;  %mV
         stim_frequency = 50;
-
+        
+        %Theoretical Electrical Stimulus
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
         amplitude_modulation = stim_amplitude;
@@ -316,7 +311,7 @@ for trial = 1:num_trials_ident
                 validation_pulses_total(trial,model) = Pulses_per_interval_total;
             end
 
-            LNL_all_temp = [LNL_all_temp LNL];
+            SRS_models_temp = [SRS_models_temp LNL];
             LNL = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
         
@@ -344,7 +339,7 @@ for trial = 1:num_trials_ident
                 validation_pulses_total(trial,model) = Pulses_per_interval_total;
             end
 
-            Hammerstein_all_temp = [Hammerstein_all_temp Hammerstein];
+            SRS_models_temp = [SRS_models_temp Hammerstein];
             Hammerstein = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
@@ -372,7 +367,7 @@ for trial = 1:num_trials_ident
                 validation_pulses_total(trial,model) = Pulses_per_interval_total;
             end
 
-            Weiner_all_temp = [Weiner_all_temp Weiner];
+            SRS_models_temp = [SRS_models_temp Weiner];
             Weiner = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
@@ -394,7 +389,7 @@ for trial = 1:num_trials_ident
                 validation_pulses_total(trial,model) = Pulses_per_interval_total;
             end
 
-            IRF_model_all_temp = [IRF_model_all_temp IRF_model];
+            SRS_models_temp = [SRS_models_temp IRF_model];
             IRF_model = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
@@ -402,17 +397,8 @@ for trial = 1:num_trials_ident
 
     end
 
-    LNL_all = [LNL_all;LNL_all_temp];
-    LNL_all_temp = [];
-    
-    Hammerstein_all = [Hammerstein_all;Hammerstein_all_temp];
-    Hammerstein_all_temp = [];
-    
-    Weiner_all = [Weiner_all;Weiner_all_temp];
-    Weiner_all_temp = [];
-    
-    IRF_model_all = [IRF_model_all;IRF_model_all_temp];
-    IRF_model_all_temp = [];
+    SRS_models = [SRS_models;SRS_models_temp];
+    SRS_models_temp = [];
 
     Zcur_all = [Zcur_all;Zcur_all_temp];
     Zcur_all_temp = [];
@@ -430,9 +416,9 @@ physiological_stimulus_time = 180;
 physiological_stimulus_max_amplitude = 0.010;
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
-W = 0.45;                  
+W = 0.45;                                       %Width of signal pulse (seconds)
 nf = physiological_stimulus_time/10;            %Number of random signal changes
-t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
+t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 %% Generate Desired Displacement and Amplitude Modulation Signals for Model Validation
@@ -456,7 +442,7 @@ for trial = 1:num_trials_val
     Pulses_per_interval_test = [];
 
     for j = 1 : nf    
-        t  = 0 : 0.001 : t_interval;         % Time Samples
+        t  = 0 : 0.001 : t_interval;         % Time Intervals
 
         if j == 1
             Freq = FrequenciesRandom_max;
@@ -498,7 +484,8 @@ for trial = 1:num_trials_val
 
     stim_amplitude = desired_displacement*170;  %mV
     stim_frequency = 50;
-
+    
+    %Theoretical Electrical Stimulus
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
     
     amplitude_modulation = stim_amplitude;
@@ -548,7 +535,7 @@ for trial = 1:num_trials_val
         for model = 1:num_models_for_ident
             
             figure(model)
-            [R, V, yp] = nlid_resid(LNL_all(1,model),Zcur);
+            [R, V, yp] = nlid_resid(SRS_models(1,model),Zcur);
             validation_accuracy(trial,model) = V;
         end
         
@@ -559,7 +546,7 @@ for trial = 1:num_trials_val
         for model = 1:num_models_for_ident
             
             figure(model)
-            [R, V, yp] = nlid_resid(Hammerstein_all(1,model),Zcur);
+            [R, V, yp] = nlid_resid(SRS_models(1,model),Zcur);
             validation_accuracy(trial,model) = V;
         end
         
@@ -570,7 +557,7 @@ for trial = 1:num_trials_val
         for model = 1:num_models_for_ident
             
             figure(model)
-            [R, V, yp] = nlid_resid(Weiner_all(1,model),Zcur);
+            [R, V, yp] = nlid_resid(SRS_models(1,model),Zcur);
             validation_accuracy(trial,model) = V;
         end
         
@@ -581,7 +568,7 @@ for trial = 1:num_trials_val
         for model = 1:num_models_for_ident
             
             figure(model)
-            [R, V, yp] = nlid_resid(IRF_model_all(1,model),Zcur);
+            [R, V, yp] = nlid_resid(SRS_models(1,model),Zcur);
             validation_accuracy(trial,model) = V;
         end
     end   
@@ -615,9 +602,9 @@ if use_fr == true
 else
     
     identification_accuracy = max(0, identification_accuracy);
-    identification_accuracy_mean = mean(identification_accuracy);
-    identification_accuracy_var = var(identification_accuracy);
-    identification_accuracy_std = std(identification_accuracy);
+    identification_accuracy_mean = mean(identification_accuracy,1);
+    identification_accuracy_var = var(identification_accuracy,0,1);
+    identification_accuracy_std = std(identification_accuracy,0,1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -635,9 +622,9 @@ else
     grid on
     
     validation_accuracy = max(0, validation_accuracy);
-    validation_accuracy_mean = mean(validation_accuracy);
-    validation_accuracy_var = var(validation_accuracy);
-    validation_accuracy_std = std(validation_accuracy);
+    validation_accuracy_mean = mean(validation_accuracy,1);
+    validation_accuracy_var = var(validation_accuracy,0,1);
+    validation_accuracy_std = std(validation_accuracy,0,1);
     
     figure(figNum)
     figNum = figNum+1;
