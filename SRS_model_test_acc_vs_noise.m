@@ -314,9 +314,10 @@ for signal = 1:signals
             'hkTolerance', 0.1, 'nhkMaxIts', 10, 'nhkMaxInner', 5);
 
             LNL=nlident(LNL,Zcur);
-
+            
+            % Evaluate by comparing with the clean Output
             figure(signal)
-            [R, V, yp] = nlid_resid(LNL,Zcur);
+            [R, V, yp] = nlid_resid(LNL,Zcur_clean);
 
             accuracy_identification = [accuracy_identification V];
 
@@ -335,9 +336,10 @@ for signal = 1:signals
             Hammerstein{1,2}=I;
 
             Hammerstein=nlident(Hammerstein,Zcur);
-
+            
+            % Evaluate by comparing with the clean Output
             figure(signal)
-            [R, V, yp] = nlid_resid(Hammerstein,Zcur);
+            [R, V, yp] = nlid_resid(Hammerstein,Zcur_clean);
 
             accuracy_identification = [accuracy_identification V];
 
@@ -360,7 +362,6 @@ for signal = 1:signals
             
             % Evaluate by comparing with the clean Output
             figure(signal)
-            %[R, V, yp] = nlid_resid(Weiner,Zcur);
             [R, V, yp] = nlid_resid(Weiner,Zcur_clean);
 
             accuracy_identification = [accuracy_identification V];
@@ -374,9 +375,10 @@ for signal = 1:signals
             %Identify a two-sided IRF Model
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
             IRF_model = irf(Zcur,'nLags',1200,'nSides',1);
-
+            
+            % Evaluate by comparing with the clean Output
             figure(signal)
-            [R, V, yp] = nlid_resid(IRF_model,Zcur);
+            [R, V, yp] = nlid_resid(IRF_model,Zcur_clean);
 
             accuracy_identification = [accuracy_identification V];
 
