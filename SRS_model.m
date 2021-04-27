@@ -102,11 +102,7 @@ nf = physiological_stimulus_time/10;            %Number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
-%Initialize all models
-% LNL_all = [];
-% Hammerstein_all = [];
-% Weiner_all = [];
-% IRF_model_all = [];
+%Initialize models
 SRS_models = [];
 
 Zcur_all = [];
@@ -165,7 +161,6 @@ for num_signals = 1:length(PRBS_stimulus)
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
         Pxx1 = Pxx1';
-
         f1 = (Fs*(0:(L/2))/L)';
 
         stim_amplitude = desired_displacement*170;
@@ -200,7 +195,7 @@ for num_signals = 1:length(PRBS_stimulus)
             A = PRBS_amplitude;                     %Else set as Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -242,7 +237,8 @@ for num_signals = 1:length(PRBS_stimulus)
 
         stim_frequency = 50;
         stim_amplitude = desired_displacement*170;
-
+        
+        %Theoretical Electrical Stimulus
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
         
         amplitude_modulation = stim_amplitude;
@@ -339,7 +335,8 @@ for num_signals = 1:length(PRBS_stimulus)
 
         stim_amplitude = desired_displacement*170;  %mV
         stim_frequency = 50;
-
+        
+        %Theoretical Electrical Stimulus
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
         
         amplitude_modulation = stim_amplitude;
@@ -604,8 +601,8 @@ for num_signals = 1:length(PRBS_stimulus)
         figure(figNum)
         figNum = figNum+1;
 
-        subplot(2,2,1)
         if PRBS_stimulus == true
+            subplot(2,2,1)
             plot(t_total,desired_displacement);
             ax = gca;
             ax.FontSize = 16;
@@ -614,6 +611,7 @@ for num_signals = 1:length(PRBS_stimulus)
             title('(a) PRBS Desired Displacement','Fontsize',16)
             grid on
         else
+            subplot(2,2,1)
             plot(t_total,desired_displacement);
             ax = gca;
             ax.FontSize = 16;
@@ -706,55 +704,6 @@ for num_signals = 1:length(PRBS_stimulus)
 
         accuracy = [accuracy V];
         
-        %Plots just the superimposed part with %VAF in the title
-        figure(figNum);
-        figNum = figNum+1;
-        pred = double(yp);
-        plot(t_total,pred);
-        hold on
-        plot(t_total, output_displacement_simulink)
-        ax = gca;
-        ax.FontSize = 18;
-        hold off
-        title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-        xlabel('Time (s)', 'Fontsize', 24)
-        ylabel('Displacement (m)', 'Fontsize', 24)
-        legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,2,[1 2])
-        plot(R)
-        ax = gca;
-        ax.FontSize = 15;
-        title('(a) Residuals from LNL Identification','Fontsize',18)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
-
-        subplot(2,2,3)
-        histogram(double(R))
-        ax = gca;
-        ax.FontSize = 15;
-        xlabel('Displacement (m)','Fontsize',20)
-        ylabel('Density','Fontsize',20)
-        title('(b) Residual Distribution','Fontsize',18)
-        grid on
-
-        S = spect(R);
-        subplot(2,2,4)
-        S_frequency = 0.0556:0.0556:0.0556*length(S);
-        subplot(2,2,4)
-        semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-        ax = gca;
-        ax.FontSize = 15;
-        title('(c) Residual Power Spectrum','Fontsize',18);
-        ylabel('PSD (log)','Fontsize',20); 
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on
-        
-        %LNL_all = [LNL_all LNL];
         SRS_models = [SRS_models LNL];
         Zcur_all = [Zcur_all Zcur];
         
@@ -776,16 +725,16 @@ for num_signals = 1:length(PRBS_stimulus)
         plot(Hammerstein{1,1});
         ax = gca;
         ax.FontSize = 15;
-        title('(a) Static Nonlinearity','Fontsize', 24)
-        xlabel('Input','Fontsize',18)
-        ylabel('Output','Fontsize',18)
+        title('(a) Static Nonlinearity','Fontsize', 22)
+        xlabel('Amplitude Modulation Input, A(t)','Fontsize',18)
+        ylabel('Transformed Amplitude Modulation','Fontsize',18)
         grid on
 
         subplot(1,2,2)
         plot(Hammerstein{1,2})
         ax = gca;
         ax.FontSize = 15;
-        title('Linear Element','Fontsize', 24)
+        title('Linear Element','Fontsize', 22)
         ylabel('X1', 'Fontsize',18)
         xlabel('Lags (s)','Fontsize',18)
         grid on
@@ -796,55 +745,6 @@ for num_signals = 1:length(PRBS_stimulus)
 
         accuracy = [accuracy V];
         
-        %Plots just the superimposed part with %VAF in the title
-        figure(figNum);
-        figNum = figNum+1;
-        pred = double(yp);
-        plot(t_total,pred);
-        hold on
-        plot(t_total, output_displacement_simulink)
-        ax = gca;
-        ax.FontSize = 18;
-        hold off
-        title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 28)
-        xlabel('Time (s)', 'Fontsize', 24)
-        ylabel('Displacement (m)', 'Fontsize', 24)
-        legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,2,[1 2])
-        plot(R)
-        ax = gca;
-        ax.FontSize = 15;
-        title('(a) Residuals from Hammerstein Identification','Fontsize',18)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
-
-        subplot(2,2,3)
-        histogram(double(R))
-        ax = gca;
-        ax.FontSize = 15;
-        xlabel('Displacement (m)','Fontsize',20)
-        ylabel('Density','Fontsize',20)
-        title('(b) Residual Distribution','Fontsize',18)
-        grid on
-
-        S = spect(R);
-        subplot(2,2,4)
-        S_frequency = 0.0556:0.0556:0.0556*length(S);
-        subplot(2,2,4)
-        semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-        ax = gca;
-        ax.FontSize = 15;
-        title('(c) Residual Power Spectrum','Fontsize',18);
-        ylabel('PSD (log)','Fontsize',20); 
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on
-    
-        %Hammerstein_all = [Hammerstein_all Hammerstein];
         SRS_models = [SRS_models Hammerstein];
         Zcur_all = [Zcur_all Zcur];
         
@@ -886,81 +786,6 @@ for num_signals = 1:length(PRBS_stimulus)
 
         accuracy = [accuracy V];
         
-        %Plots just the superimposed part with %VAF in the title
-        figure(figNum);
-        figNum = figNum+1;
-        pred = double(yp);
-        plot(t_total,pred);
-        hold on
-        plot(t_total, output_displacement_simulink)
-        ax = gca;
-        ax.FontSize = 18;
-        hold off
-        title(['Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 26)
-        xlabel('Time (s)', 'Fontsize', 22)
-        ylabel('Paralyzed Displacement, Pos_P(t) (m)', 'Fontsize', 22)
-        legend('Predicted', 'Observed', 'Fontsize', 20)
-
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,2,[1 2])
-        plot(R)
-        ax = gca;
-        ax.FontSize = 15;
-        title('(a) Residuals from SRS Identification','Fontsize',18)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
-
-        subplot(2,2,3)
-        histogram(double(R))
-        ax = gca;
-        ax.FontSize = 15;
-        xlabel('Displacement (m)','Fontsize',20)
-        ylabel('Density','Fontsize',20)
-        title('(b) Residual Distribution','Fontsize',18)
-        grid on
-        
-        R_zero = R - mean(R);
-        S = spect(R_zero);
-        subplot(2,2,4)
-        S_frequency = 0.0556:0.0556:0.0556*length(S);
-%         subplot(2,2,4)
-%         semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
-%         ax = gca;
-%         ax.FontSize = 15;
-%         title('(c) Residual Power Spectrum','Fontsize',18);
-%         ylabel('PSD (log)','Fontsize',20); 
-%         xlabel('Frequency (Hz)','Fontsize',20);
-%         grid on
-        
-        if sinusoidal_stimulus == true
-            
-            [PxxR,fR] = pwelch(double(R_zero),Nfft,[],Nfft,Fs);
-            subplot(2,2,4)
-            semilogy(fR(1:200),PxxR(1:200,:),'LineWidth',1);
-            ax = gca;
-            ax.FontSize = 15;
-            title('(c) Residual Power Spectrum','Fontsize',18);
-            ylabel('PSD (log)','Fontsize',20); 
-            xlabel('Frequency (Hz)','Fontsize',20);
-            grid on
-            
-        else
-            
-            [PxxR,fR] = pwelch(double(R_zero),Nfft,[],Nfft,Fs);
-            subplot(2,2,4)
-            semilogy(fR(1:1300),PxxR(1:1300,:),'LineWidth',1);
-            ax = gca;
-            ax.FontSize = 15;
-            title('(c) Residual Power Spectrum','Fontsize',18);
-            ylabel('PSD (log)','Fontsize',20); 
-            xlabel('Frequency (Hz)','Fontsize',20);
-            grid on
-        end
-        
-        %Weiner_all = [Weiner_all Weiner];
         SRS_models = [SRS_models Weiner];
         Zcur_all = [Zcur_all Zcur];
         
@@ -981,47 +806,74 @@ for num_signals = 1:length(PRBS_stimulus)
 
         accuracy = [accuracy V];
         
-        %Plots just the superimposed part with %VAF in the title
-        figure(figNum);
-        figNum = figNum+1;
-        pred = double(yp);
-        plot(t_total,pred);
-        hold on
-        plot(t_total, output_displacement_simulink)
-        ax = gca;
-        ax.FontSize = 18;
-        hold off
-        title(['Superimposed (IRF Model), VAF = ' num2str(V) '%'], 'Fontsize', 28)
-        xlabel('Time (s)', 'Fontsize', 24)
-        ylabel('Displacement (m)', 'Fontsize', 24)
-        legend('Predicted', 'Observed', 'Fontsize', 20)
+        if compare_two_models == true && PRBS_stimulus(num_signals) == true
+            SRS_models{1} = IRF_model;
+        elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
+            SRS_models{2} = IRF_model;
+        else
+            SRS_models{1} = IRF_model;
+        end
+        
+        Zcur_all = [Zcur_all Zcur];
 
-        %Plots Residuals, Residual Distribution and Residual Spectrum
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,2,[1 2])
-        plot(R)
+    end
+    
+    %Plot the Results of the Model Identifcation
+    %Plots just the superimposed Displacements with %VAF in the title
+    figure(figNum);
+    figNum = figNum+1;
+    pred = double(yp);
+    plot(t_total,pred);
+    hold on
+    plot(t_total, output_displacement_simulink)
+    ax = gca;
+    ax.FontSize = 18;
+    hold off
+    title(['Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 26)
+    xlabel('Time (s)', 'Fontsize', 22)
+    ylabel('Paralyzed Displacement, Pos_P(t) (m)', 'Fontsize', 22)
+    legend('Predicted', 'Observed', 'Fontsize', 20)
+
+    %Plots Residuals, Residual Distribution and Residual Spectrum
+    figure(figNum)
+    figNum = figNum+1;
+    subplot(2,2,[1 2])
+    plot(R)
+    ax = gca;
+    ax.FontSize = 15;
+    title('(a) Residuals from SRS Identification','Fontsize',18)
+    xlabel('Time (s)','Fontsize',20)
+    ylabel('Displacement (m)','Fontsize',20)
+    grid on
+
+    subplot(2,2,3)
+    histogram(double(R))
+    ax = gca;
+    ax.FontSize = 15;
+    xlabel('Displacement (m)','Fontsize',20)
+    ylabel('Density','Fontsize',20)
+    title('(b) Residual Distribution','Fontsize',18)
+    grid on
+
+    R_zero = R - mean(R);
+
+    if sinusoidal_stimulus == true
+
+        [PxxR,fR] = pwelch(double(R_zero),Nfft,[],Nfft,Fs);
+        subplot(2,2,4)
+        semilogy(fR(1:200),PxxR(1:200,:),'LineWidth',1);
         ax = gca;
         ax.FontSize = 15;
-        title('(a) Residuals from IRF Identification','Fontsize',18)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
+        title('(c) Residual Power Spectrum','Fontsize',18);
+        ylabel('PSD (log)','Fontsize',20); 
+        xlabel('Frequency (Hz)','Fontsize',20);
         grid on
 
-        subplot(2,2,3)
-        histogram(double(R))
-        ax = gca;
-        ax.FontSize = 15;
-        xlabel('Displacement (m)','Fontsize',20)
-        ylabel('Density','Fontsize',20)
-        title('(b) Residual Distribution','Fontsize',18)
-        grid on
+    else
 
-        S = spect(R);
+        [PxxR,fR] = pwelch(double(R_zero),Nfft,[],Nfft,Fs);
         subplot(2,2,4)
-        S_frequency = 0.0556:0.0556:0.0556*length(S);
-        subplot(2,2,4)
-        semilogy(S_frequency(:,1:180),S(1:180,:),'LineWidth',1.5);
+        semilogy(fR(1:1300),PxxR(1:1300,:),'LineWidth',1);
         ax = gca;
         ax.FontSize = 15;
         title('(c) Residual Power Spectrum','Fontsize',18);
@@ -1029,25 +881,6 @@ for num_signals = 1:length(PRBS_stimulus)
         xlabel('Frequency (Hz)','Fontsize',20);
         grid on
         
-%         if compare_two_models == true && PRBS_stimulus(num_signals) == true
-%             IRF1 = IRF_model;
-%         elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
-%             IRF2 = IRF_model;
-%         else
-%             IRF1 = IRF_model;
-%         end
-        
-%         if compare_two_models == true && PRBS_stimulus(num_signals) == true
-%             SRS_models(1,1) = IRF_model;
-%         elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
-%             SRS_models(1,2) = IRF_model;
-%         else
-%             SRS_models(1,1) = IRF_model;
-%         end
-        
-        SRS_models = [SRS_models IRF_model];
-        Zcur_all = [Zcur_all Zcur];
-
     end
     
 end
@@ -1055,9 +888,6 @@ end
 %% Plot the Models (Compares the models Identified from PRBS Input and Physiological Input)
 
 if compare_two_models == true && LNL_model == true
-    
-%     LNL1 = LNL_all(1);
-%     LNL2 = LNL_all(2);
     
     LNL1 = SRS_models(1);
     LNL2 = SRS_models(2);
@@ -1103,9 +933,6 @@ if compare_two_models == true && LNL_model == true
     
 elseif compare_two_models == true && Hammerstein_model == true
     
-%     Hammerstein1 = Hammerstein_all(1);
-%     Hammerstein2 = Hammerstein_all(2);
-    
     Hammerstein1 = SRS_models(1);
     Hammerstein2 = SRS_models(2);
     
@@ -1138,9 +965,6 @@ elseif compare_two_models == true && Hammerstein_model == true
     
 elseif compare_two_models == true && Weiner_model == true
         
-%     Weiner1 = Weiner_all(1);
-%     Weiner2 = Weiner_all(2);
-    
     Weiner1 = SRS_models(1);
     Weiner2 = SRS_models(2);
     
@@ -1173,8 +997,8 @@ elseif compare_two_models == true && Weiner_model == true
     
 elseif compare_two_models == true && Linear_IRF_model == true
     
-    IRF1 = SRS_models(1);
-    IRF2 = SRS_models(2);
+    IRF1 = SRS_models{1};
+    IRF2 = SRS_models{2};
     
     figure(figNum)
     figNum = figNum+1;
