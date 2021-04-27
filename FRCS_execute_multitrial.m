@@ -1,4 +1,4 @@
-% Execute Control System for x number of trials
+%% Execute Control System for x number of trials
 % Does not display figures 
 
 %Run after identifying the EMG Response System (ERS) and inverse Stimulus
@@ -10,13 +10,8 @@
 
 tStart = tic;
 
-%%
-%Set initial Parameters
-% set_output_noise_power = 0;
-% noise_snr_NHK = [];
-% noise_snr_LNL = [];
-% output_noise_power = [];
-%figNum = 850;
+%% Set initial Parameters
+
 time = 180;
 figNum = 300;
 
@@ -29,7 +24,7 @@ EMG_response_model = NHK2;
 PRBS_movement = false;
 % physiological_movement = true;
 
-%PRBS Stimulus
+%PRBS Signal Parameters
 PRBS_movement_time = 180;
 variable_amplitude = false;
 N = PRBS_movement_time/10;
@@ -39,13 +34,12 @@ PRBS_amplitude = 10; %mm
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_stimulus_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;
-nf = 18;                  %number of random signal changes
+nf = 18;                                        %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
-
 
 %Select which Model to Use
 if compare_two_models == true && LNL_model == true
@@ -67,8 +61,7 @@ end
 num_trials = 100;
 num_models = 3;
 
-%%
-% Simulated Input Test 2 (PRBS Input)
+%% Simulated Input Test 2 (PRBS Input)
 %PRBS Stimulus
 simulated_input_PRBS = [];
 
@@ -91,7 +84,7 @@ for signal = 1:num_signals
             if k == 1
                 R = PRBS_amplitude;
             else
-                R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBS Amplitude
             end
 
             for j = 1:M
@@ -99,10 +92,10 @@ for signal = 1:num_signals
             end
         end
     else
-        A = PRBS_amplitude;              %Constant Amplitude
+        A = PRBS_amplitude;              %Else set as Constant Amplitude
     end
 
-    Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+    Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
     %Specify the clock period of the signal as 1 sample. 
     %That is, the signal value can change at each time step. 
@@ -131,7 +124,6 @@ for signal = 1:num_signals
     simulated_input_PRBS(:,signal) = stim_amplitude;
 
 end
-
 
 %% Simulate the reponse of the SRS model
 simulated_input = simulated_input_PRBS;
@@ -175,6 +167,7 @@ end
 
     
 %%
+
 SRS_inverse_all = [];
 control_system_displacement_double = [];
 control_system_output_double = [];
@@ -324,8 +317,7 @@ for model = 1:num_models
 
         end
 
-        %%
-        %Generate Neural Input Command Signal
+        %% Generate Neural Input Command Signal
         Amplitude = desired_displacement*100;  %mV
         Frequency = desired_displacement*14000;  %Hz
 
@@ -333,8 +325,8 @@ for model = 1:num_models
 
         neural_simulink = [t_total' neural];
 
-        %%
-        %Generate EMG Signal (Simulink)
+        %% Generate EMG Signal (Simulink)
+        
         %Run Simulink;
         out = sim('EMG_Generation_Simulink',time);
 
@@ -777,5 +769,4 @@ end
 validation_accuracy_mean
 validation_accuracy_std
 
-%%
 tEnd = toc(tStart)/60

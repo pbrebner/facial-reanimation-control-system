@@ -1,4 +1,4 @@
-% Execute Control System
+%% Execute Facial Reanimation Control System (FRCS)
 
 %Run after identifying the EMG Response System (ERS) and inverse Stimulus
 %Response System (SRS)^1
@@ -7,15 +7,13 @@
 %and runs it through the Hammerstein Model followed by the Inverse of the
 %LNL Model to get the stimulus
 
+%% User Input Prompts
+
+
 tStart = tic;
 
-%%
-%Set initial Parameters
-% set_output_noise_power = 0;
-% noise_snr_NHK = [];
-% noise_snr_LNL = [];
-% output_noise_power = [];
-%figNum = 850;
+%% Set initial Parameters
+
 Fs = 1000; 
 Nfft = 10000;
 
@@ -25,48 +23,48 @@ stimulus_response_model = SRS_inverse;
 PRBS_movement = false;
 % physiological_movement = true;
 
-%PRBS Stimulus
+%PRBS Signal Parameters
 PRBS_movement_time = 180;
 variable_amplitude = false;
 N = PRBS_movement_time/10;
 M = 10000;
-PRBS_amplitude = 10; %mm
+PRBS_amplitude = 10;            %mm
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_stimulus_max_amplitude = 0.01;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig = 0.6;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
 W = 0.55;
-nf = physiological_movement_time/10;            %number of random signal changes
+nf = physiological_movement_time/10;            %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
 
-%%
-%Generate the Desired Displacement Signal
+%% Generate the Desired Displacement Signal for ERS Simulation
+
 if PRBS_movement == true
 
     t_total = 0:0.001:PRBS_movement_time;
     time = PRBS_movement_time;
 
-    A = 0;                    %Intialize amplitude
+    A = 0;                                  %Intialize amplitude
     if variable_amplitude == true   
         for k = 1:N
             if k == 1
                 R = PRBS_amplitude;
             else
-                R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBS Amplitude
             end
             for j = 1:M
                 A = [A R];
             end
         end
     else
-        A = PRBS_amplitude;              %Constant Amplitude
+        A = PRBS_amplitude;              %Else set as Constant Amplitude
     end
 
-    Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+    Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
     %Specify the clock period of the signal as 1 sample. 
     %That is, the signal value can change at each time step. 
@@ -104,7 +102,7 @@ else
     Pulses_per_interval_test = [];
 
     for j = 1 : nf    
-        t  = 0 : 0.001 : t_interval;         % Time Samples
+        t  = 0 : 0.001 : t_interval;         % Time Intervals
         
         if j == 1
             Freq = FrequenciesRandom_max;
@@ -145,8 +143,9 @@ else
 
 end
 
-%%
-%Generate Neural Input Command Signal
+%% Generate Neural Input Command Signal for ERS Simulation
+
+%Neural Input Parameters are based on desired displacement amplitude
 Amplitude = desired_displacement*100;  %mV
 Frequency = desired_displacement*14000;  %Hz
 
@@ -161,32 +160,13 @@ neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
 
 neural_simulink = [t_total' neural];
 
-%%
-% %generate an EMG signal (Matlab)
-% sig_emg_noise = 0.002;
-% %sig_emg_noise = 0.001;
-% N = randn(length(t_total),1)*sig_emg_noise;
-% 
-% emg = neural.*N;
-% 
-% bpFilt = designfilt('bandstopiir','FilterOrder',2, ...
-%                'HalfPowerFrequency1',10,'HalfPowerFrequency2',500, ...
-%                'DesignMethod','butter','SampleRate',Fs);   % Band Pass filter           
-% %fvtool(bpFilt)
-% 
-% EMG = filtfilt(bpFilt,emg);
-% figure(figNum)
-% figNum = figNum+1;
-% plot(t_total,EMG)
-% title('EMG')
 
-%%
-%Generate EMG Signal (Simulink)
+%% Generate EMG Signal use EMG Simulation (Simulink Model)
 
 %Run Simulink;
-out = sim('EMG_Generation_Simulink',time);
+out = sim('EMG_simulation_simulink',time);
 
-%Get Output from Simulink
+%Get Output from Simulink Model
 EMG_simulink = out.EMGout;
 t_simulink = out.tout;
 
@@ -199,19 +179,6 @@ plot(EMG_simulink)
 title('EMG Input (Simulink)','Fontsize',18)
 xlabel('Time (s)','Fontsize',16)
 ylabel('Amplitude (V)', 'Fontsize', 16)
-
-
-%% Simulink Model Method (Not Working yet)
-% emg_simulink = [t_total' EMG];
-% 
-% %% Run Simulink Model
-% out_control_system = sim('Control_System_Simulink',time);
-% 
-% 
-% %% Get Output from Simulink
-% time_out = out_control_system.tout;
-% control_system_displacement = out_control_system.control_system_displacement;
-% control_system_stimulus_output = out_control_system.control_system_stimulus_output;
 
 %% Simulate Response and Plot Results
 

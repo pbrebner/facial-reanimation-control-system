@@ -1,16 +1,24 @@
-%% Control system: Identify the Inverse SRS
+%% Facial Reanimation Control system (FRCS): Identify the Inverse SRS
+
+%INSTRUcTIONS: Must Run FRCS_identify_models before running this script
+
+%Takes the SRS model identified in FRCS_identify_models and estimates the
+%inverse
 
 %Identify the Inverse SRS Model:
 %   1. Simulate the response of the SRS you identify to a white input to generate a simulated output.
 %   2. Then identify a model between the simulated output, as an input, and the simulated input, to estimate the inverse model.
 %   3. By using the simulated signals you can avoid problems with noise.
 
+%% User Input Prompts
+
+
+
 tStart = tic;
 
-%%
-%Set Initial Parameters
+%% Set Initial Parameters
+
 time = 180;
-set_output_noise_power = 0;
 figNum = 200;
 Fs = 1000;
 
@@ -31,11 +39,10 @@ else
     SRS_model = IRF_model;
 end
 
-white_input_type = false;  %white or PRBS
+white_input_type = false;  %white or PRBS Signal used to Inverse SRS
 
 
-%%
-%Generate a simulated white input for the identified SRS Model
+%% Generate a simulated white input for the identified SRS Model
 
 if white_input_type == true
     
@@ -188,13 +195,13 @@ if white_input_type == false
         t_total = 0:0.001:PRBS_stimulus_time;
         time = PRBS_stimulus_time;
 
-        A = [0];                    %Intialize amplitude
+        A = [0];                                    %Intialize amplitude
         if variable_amplitude == true   
             for k = 1:N
                 if k == 1
                     R = PRBS_amplitude;
                 else
-                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBs Amplitude
                 end
 
                 for j = 1:M
@@ -202,10 +209,10 @@ if white_input_type == false
                 end
             end
         else
-            A = PRBS_amplitude;              %Constant Amplitude
+            A = PRBS_amplitude;              %Else set as Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -242,7 +249,6 @@ if white_input_type == false
     
 end
 
-
 %%
 %Run the input throught the simulation model (Just to get an output)
 % stimulus_simulink = [t_total' simulated_input];
@@ -257,8 +263,7 @@ end
 % output_displacement_simulink = out.Paralyzed_Model_Displacement;
 % t_simulink = out.tout;
 
-%%
-%Simulate the reponse of the SRS model to the white input
+%% Simulate the reponse of the SRS model to the Input
 
 if white_input_type == true
     simulated_input = simulated_input_uniform_rect;
@@ -290,15 +295,10 @@ for signal = 1:num_signals
 
 end
 
-
-
-%%
-% Identify a model between the simulated output (as an input) and the
-% simulated input (as an output)
+%% Identify a model between simulated output (as input) and simulated input (as output)
 
 Zcur_simulated = [simulated_outputs(1000:end,1) simulated_input(1000:end,1)];
 Zcur_simulated = nldat(Zcur_simulated,'domainIncr',0.001,'comment','Simulated Output (as Input), Simulated Input (as Output)','chanNames', {'Simulated Output (as Input)' 'Simulated Input (as Output)'});
-
 
 figure(figNum)
 figNum = figNum+1;
@@ -335,7 +335,6 @@ figNum = figNum+1;
 plot(test_output(:,1))
 title('test output 1 (as input)')
 
-
 % figure(figNum)
 % figNum = figNum+1;
 % subplot(2,1,1)
@@ -355,7 +354,8 @@ title('test output 1 (as input)')
 % ylabel('Amplitude (V)','Fontsize', 16)
 % grid on
 
-%%
+%% Identify the Inverse SRS
+
 nLags = 400;
 
 % SRS_inverse = lnlbl;  %LNL Model

@@ -1,4 +1,4 @@
-%% Control System - Identifiy Healthy Side Model (Hammerstein)and Paralyzed Side Model
+%% Facial Reanimation Control System (FRCS) - Identifiy ERS Model and SRS Model
 
 % Identifies a Hammerstein Model for the healthy side and a Model for
 % the paralyzed side. Can use both types of inputs (PRBS and Physiological)
@@ -12,10 +12,14 @@
 clc
 clear all
 
+%% User Input Prompts
+
+
 tStart = tic;
 
-%%
-%Set initial Parameters
+%% Set initial Parameters
+
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr_NHK = [];
 noise_snr_LNL = [];
@@ -29,7 +33,7 @@ Nfft = 10000;
 PRBS_stimulus = true;
 % physiological_stimulus = true;
 
-%PRBS Stimulus
+%PRBS Signal Parameters
 PRBS_movement_time = 180;
 PRBS_stimulus_time = 480;
 variable_amplitude = true;
@@ -44,15 +48,16 @@ physiological_movement_time = 180;
 physiological_stimulus_time = 480;
 physiological_stimulus_max_amplitude = 0.01;
 physiological_stimulus_max_amplitude_SRS = 0.02;
-fr = 0.1;                 %Frequency distribution mean (Hz)
-sig_NHK = 0.6;                %Std of Frequency Distribution (Hz)
-sig_SRS = 0.8;                %Std of Frequency Distribution (Hz)
+fr = 0.1;                                         %Frequency distribution mean (Hz)
+sig_NHK = 0.6;                                    %Std of Frequency Distribution (Hz)
+sig_SRS = 0.8;                                    %Std of Frequency Distribution (Hz)
 W_NHK = 0.55;
 W_SRS = 0.45;
-% nf = 48;                  %number of random signal changes
+% nf = 48;                                        %number of random signal changes
 % t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
+%Initialize Models
 NHK_all = [];
 LNL_all = [];
 Hammerstein_all = [];
@@ -74,18 +79,21 @@ Zcur_Hammerstein_all = [];
 Zcur_Weiner_all = [];
 Zcur_IRF_all = [];
 
+%Compare PRBS and Physiological Models
 compare_two_models = true;
 
 if compare_two_models == true
     PRBS_stimulus = [true false];
 end
 
+%SRS Model Structure
 LNL_model = false;
 Hammerstein_model = false;
 Weiner_model = true;
 Linear_IRF_model = true;
 
-%% Generate Input Signals to Identify Hammerstein Model
+%% Generate Desired Displacement Signals for ERS Model
+
 for num_signals = 1:length(PRBS_stimulus)
     
     if PRBS_stimulus(num_signals) == true
@@ -96,23 +104,23 @@ for num_signals = 1:length(PRBS_stimulus)
         N = PRBS_movement_time/10;
         M = 10000;
 
-        A = [0];                    %Intialize amplitude
+        A = [0];                            %Intialize amplitude
         if variable_amplitude == true   
             for k = 1:N
                 if k == 1
                     R = PRBS_amplitude;
                 else
-                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and max PRBS Amplitude
                 end
                 for j = 1:M
                     A = [A R];
                 end
             end
         else
-            A = PRBS_amplitude;              %Constant Amplitude
+            A = PRBS_amplitude;              % Else set as Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -153,7 +161,7 @@ for num_signals = 1:length(PRBS_stimulus)
         t_interval = physiological_movement_time/nf;    %Length of random interval (s)
 
         for j = 1 : nf    
-            t  = 0 : 0.001 : t_interval;         % Time Samples
+            t  = 0 : 0.001 : t_interval;                %Time Intervals
             
             if j == 1
                 Freq = FrequenciesRandom_max;
@@ -194,8 +202,9 @@ for num_signals = 1:length(PRBS_stimulus)
 
     end
 
-    %% Healthy Side Model (Hammerstein)
-    %Generate Neural Input Command Signal
+    %% Generate Neural Input Command Signal for ERS Simulation
+    
+    %Neural Input Parameters Based on Desired Displacement Amplitude
     Amplitude = desired_displacement*100;  %mV
     Frequency = desired_displacement*14000;  %Hz
     
@@ -208,32 +217,28 @@ for num_signals = 1:length(PRBS_stimulus)
     plot(t_total,neural)
     title('Neural Input')
     
-    %%
-    %Execute Simulink Model with Set Output Noise
-    set_param('EMG_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    %% Execute ERS Simulation (Simulink Model)
+    
+    %Set Output Noise as zero
+    set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink;
-    out = sim('EMG_Model_Simulink',time);
+    out = sim('ERS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
     
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from ERS Simulation
     
-    %EMG
+    %EMG, Muscle Force, and Healthy Displacement Output
     emg_simulink = out.EMGout;
-
-    %Muscle Force
     force_simulink = out.EMG_Model_Force;
-
-    %Output Displacement
     output_displacement_simulink = out.EMG_Model_Displacement;
     t_simulink = out.tout;
     
+    %Plot Healthy Displacement Output and Spectrum
     output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
-    %[Pxx,f] = pwelch(output_displacement_simulink_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
     [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
     figure(figNum)
     figNum = figNum+1;
@@ -248,31 +253,31 @@ for num_signals = 1:length(PRBS_stimulus)
     ylabel('PSD','Fontsize',20);
     xlabel('Frequency (Hz)','Fontsize',20);
     grid on;
-
+    
+    %% Input/Output for ERS Identification
+    
     Zcur = [emg_simulink,output_displacement_simulink];
-
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Output EMG, Output Displacement','chanNames', {'EMG (V)' 'Displacement (m)'});
     
-    %%
-    %Calculate Signal to Noise Ratio
+    %% Calculate Signal to Noise Ratio
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr_NHK = [noise_snr_NHK signal_to_noise];
     
-    %%
-    %Hammerstein Model Identification (EMG-Movement Model)
-    %HK Method
+    %% ERS Model Identification
+    
+    %Hammerstein Model(HK Method)
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
     NHK=nlbl;
     set(NHK,'idMethod','hk','displayFlag',true,'threshNSE',.001);
 
-    % Set umber of lags in IRF
+    % Set Number of lags in IRF
     I=NHK{1,2};
-    set(I,'nLags',2400); %(accuracy increases if nlags is increased)
+    set(I,'nLags',2400); 
     NHK{1,2}=I;
-
+    
+    %Idnetify and Normalize Linear Element
     NHK=nlident(NHK,Zcur);
     NHK = normCoefLE(NHK);
     
@@ -282,7 +287,6 @@ for num_signals = 1:length(PRBS_stimulus)
     
     %Spectrum of Predicted Displacement
     pred_zero = double(yp) - mean(double(yp));
-    %[Pyy,f] = pwelch(pred_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
     [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
     figure(figNum)
     figNum = figNum+1;
@@ -307,6 +311,7 @@ for num_signals = 1:length(PRBS_stimulus)
 end
 
 %% Generate Desired Displacement Signals for SRS Model Identification
+
 for num_signals = 1:length(PRBS_stimulus)
     
     if PRBS_stimulus(num_signals) == true
@@ -317,23 +322,23 @@ for num_signals = 1:length(PRBS_stimulus)
         N = PRBS_stimulus_time/10;
         M = 10000;
 
-        A = [0];                    %Intialize amplitude
+        A = [0];                                        %Intialize amplitude
         if variable_amplitude_SRS == true   
             for k = 1:N
                 if k == 1
                     R = PRBS_amplitude_SRS;
                 else
-                    R = rand(1,1)*PRBS_amplitude_SRS;   %Randomly generate a number between 0 and 10
+                    R = rand(1,1)*PRBS_amplitude_SRS;   %Randomly generate a number between 0 and PRBS Amplitude
                 end
                 for j = 1:M
                     A = [A R];
                 end
             end
         else
-            A = PRBS_amplitude_SRS;              %Constant Amplitude
+            A = PRBS_amplitude_SRS;              %Else Set as Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -370,11 +375,11 @@ for num_signals = 1:length(PRBS_stimulus)
         Freq_test = [];
         Pulses_per_interval_test = [];
         
-        nf = time/10;                                       %number of random signal changes
+        nf = time/10;                                   %number of random signal changes
         t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 
         for j = 1 : nf    
-            t  = 0 : 0.001 : t_interval;         % Time Samples
+            t  = 0 : 0.001 : t_interval;         %Time Intervals
             
             if j == 1
                 Freq = FrequenciesRandom_max;
@@ -416,14 +421,15 @@ for num_signals = 1:length(PRBS_stimulus)
 
     end
     
-    %% Paralyzed Side Model
-    % Generate Stimulus Input
+    %% Generate Amplitude Modulation Input for SRS Simulation
+    
     stim_frequency = 50;
     stim_amplitude = desired_displacement*170;
 
-    %input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
+    %Theoretical Electrical Stimulus
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
     
+    %Amplitude Modulation Input
     amplitude_modulation = stim_amplitude;
     amplitude_modulation_simulink = [t_total' amplitude_modulation'];
     
@@ -431,33 +437,29 @@ for num_signals = 1:length(PRBS_stimulus)
     figNum = figNum+1;
     plot(t_total,amplitude_modulation)
     title('Amplitude Modulation')
-        
-    stimulus_simulink = [t_total' input_stimulus'];
     
-    %%
-    %Execute Simulink Model with Set Output Noise
-    set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+    %% Execute SRS Simulation (Simulink Model)
+    
+    %Set Output Noise as zero
+    set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
     %Run Simulink;
-    out = sim('Paralyzed_Model_Simulink',time);
+    out = sim('SRS_simulation',time);
 
     %set_output_noise_power = ii*noise_multiplier*set_output_noise_power;
     %set_output_noise = set_output_noise_power;
     
-    %%
-    %Get Output Signals from Simulink
+    %% Get Output Signals from SRS Simulation
 
-    %Muscle Force
+    %Muscle Force, Electrical Stimulus, and Paralyzed Displacement Output
     force_simulink = out.Paralyzed_Model_Force;
-
-    %Output Stimulus & Displacement
     input_stimulus = out.Paralyzed_Model_Stimulus;
     output_displacement_simulink = out.Paralyzed_Model_Displacement;
     t_simulink = out.tout;
     
+    %Plot Paralyzed Displacement Output and Spectrum
     output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
-    %[Pxx,f] = pwelch(output_displacement_simulink_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
     [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
     figure(figNum)
     figNum = figNum+1;
@@ -473,21 +475,19 @@ for num_signals = 1:length(PRBS_stimulus)
     xlabel('Frequency (Hz)','Fontsize',20);
     grid on;
 
-    %Zcur = [input_stimulus',output_displacement_simulink];
-    %Zcur = [input_stimulus,output_displacement_simulink];
-    Zcur = [amplitude_modulation',output_displacement_simulink];
+    %% Input/Output for SRS Identification
     
+    Zcur = [amplitude_modulation',output_displacement_simulink];
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Stimulus, Output Displacement','chanNames', {'Stimulus (V)' 'Displacement (m)'});
     
-    %%
-    %Calculate Signal to Noise Ratio
+    %% Calculate Signal to Noise Ratio
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr_LNL = [noise_snr_LNL signal_to_noise];
     
-    %%
-    %Model Identification
+    %% SRS Model Identification (LNL, Hammerstein, Wiener, or Linear IRF)
+    
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
     
     if LNL_model == true
@@ -503,7 +503,6 @@ for num_signals = 1:length(PRBS_stimulus)
 
         %Spectrum of Predicted Displacement
         pred_zero = double(yp) - mean(double(yp));
-        %[Pyy,f] = pwelch(pred_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
         [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
         figure(figNum)
         figNum = figNum+1;
@@ -530,14 +529,14 @@ for num_signals = 1:length(PRBS_stimulus)
         Hammerstein=nlbl;
         set(Hammerstein,'idMethod','hk','displayFlag',true,'threshNSE',.001);
         I=Hammerstein{1,2};
-        set(I,'nLags',2400,'nSides',1); %(accuracy increases if nlags is increased)
+        set(I,'nLags',2400,'nSides',1);
         Hammerstein{1,2}=I;
         
         Hammerstein=nlident(Hammerstein,Zcur);
         
         %Spectrum of Predicted Displacement
         pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
+        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
         figure(figNum)
         figNum = figNum+1;
         subplot(2,1,1),plot(t_total,double(yp))
@@ -574,7 +573,6 @@ for num_signals = 1:length(PRBS_stimulus)
         
         %Spectrum of Predicted Displacement
         pred_zero = double(yp) - mean(double(yp));
-        %[Pyy,f] = pwelch(pred_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
         [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
         figure(figNum)
         figNum = figNum+1;
@@ -606,7 +604,7 @@ for num_signals = 1:length(PRBS_stimulus)
         
         %Spectrum of Predicted Displacement
         pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
+        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
         figure(figNum)
         figNum = figNum+1;
         subplot(2,1,1),plot(t_total,double(yp))
@@ -635,11 +633,10 @@ for num_signals = 1:length(PRBS_stimulus)
     end
     
 end
+%% Plots the Models (Compares the PRBS and Physiological Models)
 
-%%
-%Plot the Models
-
-%For ERS Model Non-linear Element
+%For ERS Model Non-linear Element (Limits to plot only "High Quality"
+%Values)
 upper_limit = 0.000586;
 lower_limit = -0.00063;
     
