@@ -5,41 +5,78 @@
 %or a "Physiological" input.
 
 %When running the script, you need to provide the following input:
-% 1. Model Structure?
-% 2. Compare two models (PRBS & Physiological)?
+% 1. Type of Model Structure? LNL/Hammerstein/Wiener/IRF
+%       The Model structure used for the Identified SRS (Default is Wiener)
+% 2. Compare two models (PRBS & Physiological)? Y/N
 %if N,
-% 3. Type of Input?
+% 3. Type of Input? Simple/PRBS/Physiological
 
 clc
 clear all
 
 %% User Input Prompts
-prompt1 = 'Model Structure? LNL/Hammerstein(Ham)/Wiener/IRF [Wiener]: ';
+
+prompt1 = 'Type of Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
+str1 = input(prompt1,'s');
+if ~strcmp(str1,'LNL') & ~strcmp(str1,'Hamm') & ~strcmp(str1,'Wiener') & ~strcmp(str1,'IRF') & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Wiener';
+end
+model_type = str1;
 
 prompt2 = 'Compare two models (PRBS & Physiological)? Y/N [Y]: ';
+str2 = input(prompt2,'s');
+if ~strcmp(str2,'Y') & ~strcmp(str2,'N') & ~isempty(str2)
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 'Y';
+end
 
-%if str2 == false
-prompt3 = 'Type of Input? Simple/PRBS/Physiological(Phys) [PRBS]: ';
-%end
+if strcmp(str2,'Y')
+    str2 = true;
+elseif strcmp(str2,'N')
+    str2 = false;
+end
+
+if str2 == false
+    prompt3 = 'Type of Input? Simple/PRBS/Physiological(Phys) [PRBS]: ';
+    str3 = input(prompt3,'s');
+    if ~strcmp(str3,'Simple') & ~strcmp(str3,'PRBS') & ~strcmp(str3,'Phys') & ~isempty(str3)
+        disp('Invalid Input')
+        return
+    elseif isempty(str3)
+        str3 = 'PRBS';
+    end
+    
+    if strcmp(str3,'Simple')
+        sinusoidal_stimulus = true;
+        PRBS_stimulus = false;
+    elseif strcmp(str3,'PRBS')
+        sinusoidal_stimulus = false;
+        PRBS_stimulus = true;
+    else
+        sinusoidal_stimulus = false;
+        PRBS_stimulus = false;
+    end 
+    input_type = str3;
+end
 
 tStart = tic;
 
 %% Set initial Parameters
 
+%Noise Parameters
 set_output_noise_power = 0;
-accuracy = [];
 noise_snr = [];
 output_noise_power = [];
 figNum = 1;
 
-%For Power Spectrums
+%For Power Spectrums or FFTs
 Fs = 1000;
 Nfft = 200000;
-
-%Type of Input
-sinusoidal_stimulus = false;
-PRBS_stimulus = true;
-% physiological_stimulus = true;
 
 %Sinusoidal (Simple) Signal Parameters (Constant Freq Sine with Modulated Amp)
 desired_displacement_frequency = 0.5;
@@ -66,24 +103,38 @@ t_interval = physiological_stimulus_time/nf;    %Length of random interval (seco
 chance_of_zero = false;
 
 %Initialize all models
-LNL_all = [];
-Hammerstein_all = [];
-Weiner_all = [];
-IRF_model_all = [];
+% LNL_all = [];
+% Hammerstein_all = [];
+% Weiner_all = [];
+% IRF_model_all = [];
+SRS_models = [];
+
 Zcur_all = [];
+accuracy = [];
 
 %Compare Models from both PRBS and Physiological Input
-compare_two_models = false;
+compare_two_models = str2;
 
 if compare_two_models == true
+    sinusoidal_stimulus = false;
     PRBS_stimulus = [true false];
 end
 
 %Model Type
 LNL_model = false;
 Hammerstein_model = false;
-Weiner_model = true;
-Linear_IRF_model = true;
+Weiner_model = false;
+Linear_IRF_model = false;
+
+if strcmp(str1,'LNL')
+    LNL_model = true;
+elseif strcmp(str1,'Hamm')
+    Hammerstein_model = true;
+elseif strcmp(str1,'Wiener')
+    Weiner_model = true;
+elseif strcmp(str1,'IRF')
+    Linear_IRF_model = true;
+end
 
 %% Generate Desired Displacement & Amplitude Modulation Signal for Model Identification
 %(Sinusoidal, PRBS, or "Physiological") 
@@ -702,10 +753,9 @@ for num_signals = 1:length(PRBS_stimulus)
         ylabel('PSD (log)','Fontsize',20); 
         xlabel('Frequency (Hz)','Fontsize',20);
         grid on
-
-        disp(LNL.idMethod)
         
-        LNL_all = [LNL_all LNL];
+        %LNL_all = [LNL_all LNL];
+        SRS_models = [SRS_models LNL];
         Zcur_all = [Zcur_all Zcur];
         
     elseif Hammerstein_model == true
@@ -794,7 +844,8 @@ for num_signals = 1:length(PRBS_stimulus)
         xlabel('Frequency (Hz)','Fontsize',20);
         grid on
     
-        Hammerstein_all = [Hammerstein_all Hammerstein];
+        %Hammerstein_all = [Hammerstein_all Hammerstein];
+        SRS_models = [SRS_models Hammerstein];
         Zcur_all = [Zcur_all Zcur];
         
     elseif Weiner_model == true
@@ -909,7 +960,8 @@ for num_signals = 1:length(PRBS_stimulus)
             grid on
         end
         
-        Weiner_all = [Weiner_all Weiner];
+        %Weiner_all = [Weiner_all Weiner];
+        SRS_models = [SRS_models Weiner];
         Zcur_all = [Zcur_all Zcur];
         
     elseif Linear_IRF_model == true
@@ -977,14 +1029,23 @@ for num_signals = 1:length(PRBS_stimulus)
         xlabel('Frequency (Hz)','Fontsize',20);
         grid on
         
-        if compare_two_models == true && PRBS_stimulus(num_signals) == true
-            IRF1 = IRF_model;
-        elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
-            IRF2 = IRF_model;
-        else
-            IRF1 = IRF_model;
-        end
+%         if compare_two_models == true && PRBS_stimulus(num_signals) == true
+%             IRF1 = IRF_model;
+%         elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
+%             IRF2 = IRF_model;
+%         else
+%             IRF1 = IRF_model;
+%         end
         
+%         if compare_two_models == true && PRBS_stimulus(num_signals) == true
+%             SRS_models(1,1) = IRF_model;
+%         elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
+%             SRS_models(1,2) = IRF_model;
+%         else
+%             SRS_models(1,1) = IRF_model;
+%         end
+        
+        SRS_models = [SRS_models IRF_model];
         Zcur_all = [Zcur_all Zcur];
 
     end
@@ -995,8 +1056,11 @@ end
 
 if compare_two_models == true && LNL_model == true
     
-    LNL1 = LNL_all(1);
-    LNL2 = LNL_all(2);
+%     LNL1 = LNL_all(1);
+%     LNL2 = LNL_all(2);
+    
+    LNL1 = SRS_models(1);
+    LNL2 = SRS_models(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -1037,10 +1101,13 @@ if compare_two_models == true && LNL_model == true
     legend('PRBS', 'Physiological','Fontsize',13)
     grid on
     
-elseif compare_two_models == true && LNL_model == false && Hammerstein_model == true
+elseif compare_two_models == true && Hammerstein_model == true
     
-    Hammerstein1 = Hammerstein_all(1);
-    Hammerstein2 = Hammerstein_all(2);
+%     Hammerstein1 = Hammerstein_all(1);
+%     Hammerstein2 = Hammerstein_all(2);
+    
+    Hammerstein1 = SRS_models(1);
+    Hammerstein2 = SRS_models(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -1069,10 +1136,13 @@ elseif compare_two_models == true && LNL_model == false && Hammerstein_model == 
     grid on
     hold off
     
-elseif compare_two_models == true && LNL_model == false && Hammerstein_model == false && Weiner_model == true
+elseif compare_two_models == true && Weiner_model == true
         
-    Weiner1 = Weiner_all(1);
-    Weiner2 = Weiner_all(2);
+%     Weiner1 = Weiner_all(1);
+%     Weiner2 = Weiner_all(2);
+    
+    Weiner1 = SRS_models(1);
+    Weiner2 = SRS_models(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -1101,7 +1171,10 @@ elseif compare_two_models == true && LNL_model == false && Hammerstein_model == 
     grid on
     hold off
     
-elseif compare_two_models == true && LNL_model == false && Hammerstein_model == false && Weiner_model == false && Linear_IRF_model == true
+elseif compare_two_models == true && Linear_IRF_model == true
+    
+    IRF1 = SRS_models(1);
+    IRF2 = SRS_models(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -1119,6 +1192,4 @@ elseif compare_two_models == true && LNL_model == false && Hammerstein_model == 
     
 end
 
-
 tEnd = toc(tStart)/60
-
