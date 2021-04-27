@@ -13,15 +13,17 @@
 %calculate the validation VAF mean and std.
 
 %When running the script, you need to provide the following input:
-% 1. Maximum number of Movement Pulses?
+% 1. Type of Model Structure? LNL/Hammerstein/Wiener/IRF
+%       The Model structure used for the Identified SRS (Default is Wiener)
+% 2. Maximum number of Movement Pulses?
 %       The signals used for identification will start at 1 movement pulse
 %       and iteratively increase by 1 until the maximum number of movement
 %       pulse is reached
-% 2. Number of Identification Trials?
+% 3. Number of Identification Trials?
 %       Number of model identification trials to calculate VAF mean and
 %       std for model identification. Increasing this value has a large 
 %       impact on how long the script needs to run 
-% 3. Number of Validation Trials?
+% 4. Number of Validation Trials?
 %       Number of  model validation trials to calculate VAF mean and std
 
 clc
@@ -29,7 +31,14 @@ clear all
 
 %% User Input Prompts
 
-prompt1 = 'Model Type? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
+prompt1 = 'Type of Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
+str1 = input(prompt1,'s');
+if ~strcmp(str1,'LNL') & ~strcmp(str1,'Hamm') & ~strcmp(str1,'Wiener') & ~strcmp(str1,'IRF') & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Wiener';
+end
 
 prompt2 = 'Maximum Number of Movement Pulses? 1-50 [30]: ';
 str2 = input(prompt2);
@@ -62,11 +71,10 @@ tStart = tic;
 
 %% Set initial Parameters
 
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
-
-Fs = 1000; 
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
@@ -81,8 +89,18 @@ chance_of_zero = false;
 %Type of Model
 LNL_model = false;
 Hammerstein_model = false;
-Weiner_model = true;
-Linear_IRF_model = true;
+Weiner_model = false;
+Linear_IRF_model = false;
+
+if strcmp(str1,'LNL')
+    LNL_model = true;
+elseif strcmp(str1,'Hamm')
+    Hammerstein_model = true;
+elseif strcmp(str1,'Wiener')
+    Weiner_model = true;
+elseif strcmp(str1,'IRF')
+    Linear_IRF_model = true;
+end
 
 %Initialize Models
 LNL_all_temp = [];
@@ -230,16 +248,6 @@ for trial = 1:num_trials_ident
 
         end
 
-        %FFT of Desired Displacement
-        L = length(desired_displacement);
-
-        Y = fft(desired_displacement);
-        P1 = abs(Y/L);
-        Pxx1 = P1(1:L/2+1);
-        Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-
-        f1 = (Fs*(0:(L/2))/L)';
-
         desired_displacement = desired_displacement';
 
         stim_amplitude = desired_displacement*170;  %mV
@@ -252,7 +260,7 @@ for trial = 1:num_trials_ident
 
         %% Execute the SRS Simulation
         
-        %Set Output noise as Zero
+        %Set Output noise as zero
         set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
         output_noise_power = [output_noise_power set_output_noise_power];
 
@@ -267,7 +275,7 @@ for trial = 1:num_trials_ident
         %Muscle Force
         force_simulink = out.Paralyzed_Model_Force;
 
-        %Input Stimulus and Output Displacement
+        %Input Stimulus and Output Paralyzed Displacement
         input_stimulus = out.Paralyzed_Model_Stimulus;
         output_displacement_simulink = out.Paralyzed_Model_Displacement;
         t_simulink = out.tout;
@@ -278,6 +286,8 @@ for trial = 1:num_trials_ident
         Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
 
         %% Calculate Signal to Noise Ratio
+        
+        %Get Output Noise from SRS Simulation
         output_noise_simulink = out.Output_Noise;
 
         signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
@@ -315,6 +325,7 @@ for trial = 1:num_trials_ident
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
             Hammerstein=nlbl;
             set(Hammerstein,'idMethod','hk','displayFlag',true,'threshNSE',.001);
+            
             I=Hammerstein{1,2};
             set(I,'nLags',2400,'nSides',1); %(accuracy increases if nlags is increased)
             Hammerstein{1,2}=I;
@@ -342,6 +353,7 @@ for trial = 1:num_trials_ident
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
             Weiner = lnbl; %Wiener
             set(Weiner,'idMethod','hk');
+            
             I = Weiner{1,1};
             set(I,'nLags',850,'nSides',1); % Set Number of lags and Sides in IRF
             Weiner{1,1} = I;
@@ -366,7 +378,7 @@ for trial = 1:num_trials_ident
 
         elseif Linear_IRF_model == true
             
-            % Identify a two-sided IRF Model
+            %Identify a two-sided IRF Model
             set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
             IRF_model = irf(Zcur,'nLags',1200,'nSides',1);
 
@@ -412,8 +424,6 @@ end
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
-
-Fs = 1000; 
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
@@ -483,16 +493,6 @@ for trial = 1:num_trials_val
 
     Pulses_per_interval_total = sum(Pulses_per_interval_test);
     Freq_test_average = sum(Freq_test)/length(Freq_test);
-    
-    %FFT of Desired Displacement
-    L = length(desired_displacement);
-    
-    Y = fft(desired_displacement);
-    P1 = abs(Y/L);
-    Pxx1 = P1(1:L/2+1);
-    Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-    
-    f1 = (Fs*(0:(L/2))/L)';
 
     desired_displacement = desired_displacement';
 
@@ -532,6 +532,8 @@ for trial = 1:num_trials_val
     Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
     
     %% Calculate Signal to Noise Ratio
+    
+    %Get Output Noise from SRS Simulation
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
@@ -547,7 +549,6 @@ for trial = 1:num_trials_val
             
             figure(model)
             [R, V, yp] = nlid_resid(LNL_all(1,model),Zcur);
-
             validation_accuracy(trial,model) = V;
         end
         
@@ -559,7 +560,6 @@ for trial = 1:num_trials_val
             
             figure(model)
             [R, V, yp] = nlid_resid(Hammerstein_all(1,model),Zcur);
-
             validation_accuracy(trial,model) = V;
         end
         
@@ -571,7 +571,6 @@ for trial = 1:num_trials_val
             
             figure(model)
             [R, V, yp] = nlid_resid(Weiner_all(1,model),Zcur);
-
             validation_accuracy(trial,model) = V;
         end
         
@@ -583,7 +582,6 @@ for trial = 1:num_trials_val
             
             figure(model)
             [R, V, yp] = nlid_resid(IRF_model_all(1,model),Zcur);
-
             validation_accuracy(trial,model) = V;
         end
     end   
@@ -591,7 +589,7 @@ end
 
 %% Plot Accuracy (%VAF) vs Number of Movement Pulses in Identification Signal
 
-figNum = 100;
+figNum = 200;
 
 if use_fr == true
     figure(figNum)
@@ -644,9 +642,6 @@ else
     figure(figNum)
     figNum = figNum+1;
     hold on
-    % errorbar(validation_pulses_total,validation_accuracy_mean,validation_accuracy_std,'CapSize',14,'LineWidth',3)
-    % plot(validation_pulses_total,min(validation_accuracy_mean+validation_accuracy_std,100),'--r','LineWidth',2)
-    % plot(validation_pulses_total,max(validation_accuracy_mean-validation_accuracy_std,0),'--r','LineWidth',2)
     plot(validation_pulses_total(1,:),min(validation_accuracy_mean+validation_accuracy_std,100),'LineStyle','none','LineWidth',2)
     plot(validation_pulses_total(1,:),max(validation_accuracy_mean-validation_accuracy_std,0),'LineStyle','none','LineWidth',2)
     patch([validation_pulses_total(1,:) fliplr(validation_pulses_total(1,:))], [min(validation_accuracy_mean+validation_accuracy_std,100) fliplr(max(validation_accuracy_mean-validation_accuracy_std,0))], 'b','FaceAlpha',0.2)
