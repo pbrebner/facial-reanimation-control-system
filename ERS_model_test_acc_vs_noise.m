@@ -34,6 +34,8 @@ end
 tStart = tic;
 
 %% Set initial Parameters
+
+%Noise Parameters
 noise_level_iters = 18;                             %Number of times the noise power is multiplied
 set_output_noise_initial = 1e-15;                   %Initial Output Noise Power
 set_output_noise_power = set_output_noise_initial;  %Noise power passed into ERS simulation
@@ -69,6 +71,7 @@ noise_snr_all = [];
 output_noise_power = [];
 output_noise_power_all = [];
 
+%Initialize Models
 NHK_all = [];
 models_all = [];
 Zcur_all = [];
@@ -113,7 +116,7 @@ for signal = 1:signals
             A = PRBS_amplitude;                     %Else set as Constant PRBS Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001];
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 

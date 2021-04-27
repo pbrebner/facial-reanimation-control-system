@@ -20,7 +20,7 @@
 %% User Input Prompts
 
 if compare_two_models == true
-    prompt1 = 'Which Identified Model Type do you want to Validate? PRBS/Phys [PRBS]: ';
+    prompt1 = 'Which Identified Model do you want to Validate? PRBS/Phys [PRBS]: ';
     str1 = input(prompt1,'s');
     if ~strcmp(str1,'PRBS') & ~strcmp(str1,'Phys') & ~isempty(str1)
         disp('Invalid Input')
@@ -53,6 +53,8 @@ end
 tStart = tic;
 
 %% Set initial Parameters
+
+%Noise Parameters
 noise_snr = [];
 set_output_noise_power = 0;
 output_noise_power = [];
@@ -251,9 +253,8 @@ for signal = 1:length(PRBS_movement)
         
         set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
 
-        %Plot Results of Identification
+        %Plot Results of Validation
         figure(figNum)
-        %figNum = figNum+1;
         [R, V, yp] = nlid_resid(NHK,Zcur);
         
         %validation accuracy for all trials of current signal type

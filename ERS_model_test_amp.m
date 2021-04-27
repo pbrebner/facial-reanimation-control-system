@@ -338,7 +338,7 @@ for trial = 1:num_trials
     
 end
 
-%% Plot Accuracy (%VAF)
+%% Plot Accuracy (%VAF) vs Identifcation Signal Amplitude or Record Length
 figNum = 300;
 
 if variable_signal == true
@@ -362,10 +362,7 @@ if variable_signal == true
     validation_accuracy_mean = mean(validation_accuracy);
     validation_accuracy_var = var(validation_accuracy);
     validation_accuracy_std = std(validation_accuracy);
-    % errorbar(validation_pulses_total,validation_accuracy_mean,validation_accuracy_std,'CapSize',14,'LineWidth',3)
     hold on
-%     plot(PRBS_stimulus_time*0.001,min(validation_accuracy_mean+validation_accuracy_std,100),'--r','LineWidth',2)
-%     plot(PRBS_stimulus_time*0.001,max(validation_accuracy_mean-validation_accuracy_std,0),'--r','LineWidth',2)
     plot(PRBS_amplitude*0.001,min(validation_accuracy_mean+validation_accuracy_std,100),'LineStyle','none','LineWidth',2)
     plot(PRBS_amplitude*0.001,max(validation_accuracy_mean-validation_accuracy_std,0),'LineStyle','none','LineWidth',2)
     patch([PRBS_amplitude*0.001 fliplr(PRBS_amplitude*0.001)], [min(validation_accuracy_mean+validation_accuracy_std,100) fliplr(max(validation_accuracy_mean-validation_accuracy_std,0))], 'b','FaceAlpha',0.2)
@@ -377,20 +374,6 @@ if variable_signal == true
     xlabel('Identification Signal Amplitude (m)','Fontsize', 18)
     ylabel('Accuracy (%VAF)','Fontsize', 18)
     grid on
-    
-%     figure(figNum)
-%     figNum = figNum+1;
-%     plot(const_amp*0.001,identification_accuracy,'LineWidth', 3)
-%     hold on
-%     plot(const_amp*0.001,validation_accuracy,'LineWidth', 3)
-%     ax = gca;
-%     ax.FontSize = 26;
-%     hold off
-%     title('Amplitude vs Accuracy','Fontsize', 36) 
-%     xlabel('Identification Signal Amplitude (m)','Fontsize', 32)
-%     ylabel('Accuracy (%VAF)','Fontsize', 32)
-%     legend('Identification Accuracy', 'Validation Accuracy','Fontsize', 26,'Location','southeast')
-%     grid on
     
 end
 
@@ -438,6 +421,3 @@ end
 
 tEnd = toc(tStart)/60
 
-        
-        
-        

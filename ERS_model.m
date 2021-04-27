@@ -62,9 +62,9 @@ if str1 == false
         simple_movement = false;
         PRBS_movement = false;
     end      
+    
+    input_type = str2;
 end
-
-input_type = str2;
 
 tStart = tic;
 
