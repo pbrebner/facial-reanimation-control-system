@@ -30,14 +30,26 @@ if compare_two_models == true
     end
     
     if strcmp(str1,'PRBS')
-        SRS_model = SRS_models(1);
+        if strcmp(model_type,'IRF')
+            model = SRS_models{1};
+        else
+            model = SRS_models(1);
+        end
         disp(['Validating ' model_type ' Model Identified from PRBS Input'])
     elseif strcmp(str1,'Phys')
-        SRS_model = SRS_models(2);
+        if strcmp(model_type,'IRF')
+            model = SRS_models{2};
+        else
+            model = SRS_models(2);
+        end
         disp(['Validating ' model_type ' Model Identified from Physiological Input'])
     end
 else
-    SRS_model = SRS_models(1);
+    if strcmp(model_type,'IRF')
+        model = SRS_models{1};
+    else
+        model = SRS_models(1);
+    end
     disp(['Validating ' model_type ' Model Identified from ' input_type ' Input'])
 end
 
@@ -81,19 +93,6 @@ nf = physiological_stimulus_time/10;            %number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
-% %Set which model you want to use
-% if compare_two_models == true
-%     if LNL_model == true
-%         LNL = LNL1;
-%     elseif Hammerstein_model == true
-%         Hammerstein = Hammerstein1;
-%     elseif Weiner_model == true
-%         Weiner = Weiner2;
-%     elseif Linear_IRF_model == true
-%         IRF_model = IRF1;
-%     end
-% end
-
 %Number of Validation Trials
 num_trials = str2;
 validation_accuracy = [];
@@ -112,13 +111,13 @@ for signal = 1:length(PRBS_stimulus)
             t_total = 0:0.001:PRBS_stimulus_time;
             time = PRBS_stimulus_time;
 
-            A = [0];                    %Intialize amplitude
+            A = [0];                                    %Intialize amplitude
             if variable_amplitude == true   
                 for k = 1:N
                     if k == 1
                         R = PRBS_amplitude;
                     else
-                        R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and 10
+                        R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBS Amplitude
                     end
 
                     for j = 1:M
@@ -126,10 +125,10 @@ for signal = 1:length(PRBS_stimulus)
                     end
                 end
             else
-                A = PRBS_amplitude;              %Constant Amplitude
+                A = PRBS_amplitude;                     %Else set as Constant Amplitude
             end
 
-            Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+            Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
             %Specify the clock period of the signal as 1 sample. 
             %That is, the signal value can change at each time step. 
@@ -292,43 +291,12 @@ for signal = 1:length(PRBS_stimulus)
 
         %% Model Validation (LNL, Hammerstein, Wiener, or Linear IRF)
 
-        if LNL_model == true
+        set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
 
-            set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
+        figure(figNum)
+        [R, V, yp] = nlid_resid(model,Zcur);
 
-            figure(figNum)
-            [R, V, yp] = nlid_resid(SRS_model,Zcur);
-
-            validation_accuracy = [validation_accuracy V];
-
-        elseif Hammerstein_model == true
-
-            set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-            figure(figNum)
-            [R, V, yp] = nlid_resid(SRS_model,Zcur);
-
-            validation_accuracy = [validation_accuracy V];
-
-        elseif Weiner_model == true
-
-            set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-            figure(figNum)
-            [R, V, yp] = nlid_resid(SRS_model,Zcur);
-
-            validation_accuracy = [validation_accuracy V];    
-
-        elseif Linear_IRF_model == true
-
-            set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
-
-            figure(figNum)
-            [R, V, yp] = nlid_resid(SRS_model,Zcur);
-
-            validation_accuracy = [validation_accuracy V];   
-
-        end
+        validation_accuracy = [validation_accuracy V];
 
     end
     
