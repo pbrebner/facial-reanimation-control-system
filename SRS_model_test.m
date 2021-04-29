@@ -7,7 +7,7 @@
 %superimposed predicted and observed displacements, residual distribution, 
 %and residual spectrum 
 
-%INSTRUCTIONS: RUN Paralyzed_Model_Updated FIRST and THEN RUN THIS
+%INSTRUCTIONS: RUN SRS_model FIRST and THEN RUN THIS
 
 %When running the script, you need to provide the following input:
 %If both PRBS and Physiological Models were Identified in SRS_model,
@@ -90,7 +90,7 @@ fr = 0.1;                                       %Frequency distribution mean (Hz
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
 W = 0.45;                                       %Width of signal pulse (seconds) 
 nf = physiological_stimulus_time/10;            %number of random signal changes
-t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
+t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
 %Number of Validation Trials
@@ -258,10 +258,10 @@ for signal = 1:length(PRBS_stimulus)
         %% Get Output Signals from SRS Simulation (Simulink Model)
 
         %Muscle Force
-        force_simulink = out.Paralyzed_Model_Force;
+        force_simulink = out.SRS_Simulation_Force;
 
         %Electrical Stimulus
-        input_stimulus = out.Paralyzed_Model_Stimulus;
+        input_stimulus = out.SRS_Simulation_Stimulus;
 
         %FFT of Electrical Stimulus
         L = length(input_stimulus);
@@ -273,7 +273,7 @@ for signal = 1:length(PRBS_stimulus)
         f2 = (Fs*(0:(L/2))/L)';
 
         %Paralyzed Displacement Output
-        output_displacement_simulink = out.Paralyzed_Model_Displacement;
+        output_displacement_simulink = out.SRS_Simulation_Displacement;
         t_simulink = out.tout;
 
         %% Input/Output for Model Validation
