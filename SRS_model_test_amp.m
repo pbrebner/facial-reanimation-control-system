@@ -144,7 +144,7 @@ for record_length = 1:num_record_lengths
             A = PRBS_amplitude(model);                      %Else set as Constant Amplitude
         end
 
-        Range = [0,0.001];
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -165,7 +165,8 @@ for record_length = 1:num_record_lengths
 
         stim_frequency = 50;
         stim_amplitude = desired_displacement*170;
-
+        
+        %Theoretical Electrical Stimulus
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
         
         amplitude_modulation = stim_amplitude;
@@ -185,12 +186,10 @@ for record_length = 1:num_record_lengths
         
         %% Get Output from SRS Simulation (Simulink Model)
 
-        %Muscle Force
-        force_simulink = out.Paralyzed_Model_Force;
-
-        %Input Stimulus and Output Paralyzed Displacement
-        input_stimulus = out.Paralyzed_Model_Stimulus;
-        output_displacement_simulink = out.Paralyzed_Model_Displacement;
+        %Muscle Force,Input Stimulus and Output Paralyzed Displacement
+        force_simulink = out.SRS_Simulation_Force;
+        input_stimulus = out.SRS_Simulation_Stimulus;
+        output_displacement_simulink = out.SRS_Simulation_Displacement;
         t_simulink = out.tout;
 
         %% Input/Output for Model Identification
@@ -198,7 +197,7 @@ for record_length = 1:num_record_lengths
         Zcur = [amplitude_modulation',output_displacement_simulink];
         Zcur = nldat(Zcur,'domainIncr',0.001,'comment','Input Amplitude Modulation, Output Displacement','chanNames', {'Amplitude Modulation (V)' 'Displacement (m)'});
         
-        %% Model Identification (LNL, Hammerstein, Wiener, Linear IRF)
+        %% Model Identification (LNL, Hammerstein, Wiener, or Linear IRF)
 
         if LNL_model == true
 
@@ -270,8 +269,13 @@ for record_length = 1:num_record_lengths
             [R, V, yp] = nlid_resid(IRF_model,Zcur);
 
             identification_accuracy = [identification_accuracy V];
-
-            IRF_model_all = [IRF_model_all IRF_model];
+            
+            if variable_time == true
+                IRF_model_all{record_length} = IRF_model;
+            elseif variable_signal == true
+                IRF_model_all{model} = IRF_model;
+            end
+            
             IRF_model = [];
             Zcur_all = [Zcur_all Zcur];
             
@@ -283,6 +287,7 @@ end
 
 %% Set Initial Parameters for Model Validation
 
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
@@ -360,7 +365,8 @@ for trial = 1:num_trials
 
     stim_amplitude = desired_displacement*170;  %mV
     stim_frequency = 50;
-
+        
+    %Theoretical Electrical Stimulus
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
     
     amplitude_modulation = stim_amplitude;
@@ -380,12 +386,10 @@ for trial = 1:num_trials
 
     %% Get Output Signals from Simulink
 
-    %Muscle Force
-    force_simulink = out.Paralyzed_Model_Force;
-
-    %Input Stimulus and Output Paralyzed Displacement
-    input_stimulus = out.Paralyzed_Model_Stimulus;
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    %Muscle Force, Input Stimulus and Output Paralyzed Displacement
+    force_simulink = out.SRS_Simulation_Force;
+    input_stimulus = out.SRS_Simulation_Stimulus;
+    output_displacement_simulink = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
 
     %% Input/Output for Model Validation
@@ -403,7 +407,11 @@ for trial = 1:num_trials
     
     %% Model Validation (LNL, Hammerstein, Wiener, or Linear IRF)
     
-    num_models = max(num_models_for_ident, num_record_lengths);
+    if variable_time == true
+        num_models = num_record_lengths;
+    elseif variable_signal == true
+        num_models = num_models_for_ident;
+    end
 
     if LNL_model == true
 
@@ -448,7 +456,7 @@ for trial = 1:num_trials
         for model = 1:num_models
 
             figure(2)
-            [R, V, yp] = nlid_resid(IRF_model_all(model),Zcur);
+            [R, V, yp] = nlid_resid(IRF_model_all{model},Zcur);
             validation_accuracy(trial,model) = V;
 
         end

@@ -78,7 +78,7 @@ output_noise_power = [];
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
-physiological_stimulus_max_amplitude = 0.01;
+physiological_stimulus_max_amplitude = 0.02;
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
 W = 0.45;                                       %Width of signal pulse (seconds)
@@ -268,11 +268,11 @@ for trial = 1:num_trials_ident
         %% Get Output Signals from SRS Simulation (Simulink Model)
 
         %Muscle Force
-        force_simulink = out.Paralyzed_Model_Force;
+        force_simulink = out.SRS_Simulation_Force;
 
         %Input Stimulus and Output Paralyzed Displacement
-        input_stimulus = out.Paralyzed_Model_Stimulus;
-        output_displacement_simulink = out.Paralyzed_Model_Displacement;
+        input_stimulus = out.SRS_Simulation_Stimulus;
+        output_displacement_simulink = out.SRS_Simulation_Displacement;
         t_simulink = out.tout;
 
         %% Input/Output for Model Identification
@@ -388,17 +388,22 @@ for trial = 1:num_trials_ident
             else
                 validation_pulses_total(trial,model) = Pulses_per_interval_total;
             end
+            
+            SRS_models_temp{model+((trial-1)*num_models_for_ident)} = IRF_model;
 
-            SRS_models_temp = [SRS_models_temp IRF_model];
             IRF_model = [];
             Zcur_all_temp = [Zcur_all_temp Zcur];
 
         end
 
     end
-
-    SRS_models = [SRS_models;SRS_models_temp];
-    SRS_models_temp = [];
+    
+    if Linear_IRF_model == true
+        SRS_models = SRS_models_temp(:,:);
+    else
+        SRS_models = [SRS_models;SRS_models_temp];
+        SRS_models_temp = [];
+    end
 
     Zcur_all = [Zcur_all;Zcur_all_temp];
     Zcur_all_temp = [];
@@ -407,13 +412,14 @@ end
 
 %% Set Initial Parameters for Model Validation
 
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
 
 %Set Physiological Signal Parameters
 physiological_stimulus_time = 180;
-physiological_stimulus_max_amplitude = 0.010;
+physiological_stimulus_max_amplitude = 0.02;
 fr = 0.1;                                       %Frequency distribution mean (Hz)
 sig = 0.8;                                      %Std of Frequency Distribution (Hz)
 W = 0.45;                                       %Width of signal pulse (seconds)
@@ -506,11 +512,11 @@ for trial = 1:num_trials_val
     %% Get Output Signals from SRS Simulation (Simulink Model)
     
     %Muscle Force
-    force_simulink = out.Paralyzed_Model_Force;
+    force_simulink = out.SRS_Simulation_Force;
 
     %Input Stimulus and Output Paralyzed Displacement
-    input_stimulus = out.Paralyzed_Model_Stimulus;
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    input_stimulus = out.SRS_Simulation_Stimulus;
+    output_displacement_simulink = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
 
     %% Input/Output for Model Validation
@@ -568,7 +574,7 @@ for trial = 1:num_trials_val
         for model = 1:num_models_for_ident
             
             figure(model)
-            [R, V, yp] = nlid_resid(SRS_models(1,model),Zcur);
+            [R, V, yp] = nlid_resid(SRS_models{model},Zcur);
             validation_accuracy(trial,model) = V;
         end
     end   

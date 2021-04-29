@@ -102,7 +102,7 @@ output_noise_power_all = [];
 LNL_all = [];
 Hammerstein_all = [];
 Weiner_all = [];
-IRF_model_all = [];
+
 models_all = [];
 
 Zcur_all = [];
@@ -146,7 +146,7 @@ for signal = 1:signals
             A = PRBS_amplitude;                     %Else set as Constant Amplitude
         end
 
-        Range = [0,0.001];
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -253,10 +253,10 @@ for signal = 1:signals
     
     %Get Clean Output Signals from Simulink
     %Muscle Force
-    force_simulink_clean = out.Paralyzed_Model_Force;
+    force_simulink_clean = out.SRS_Simulation_Force;
     
     %Clean Output Paralyzed Displacement
-    output_displacement_simulink_clean = out.Paralyzed_Model_Displacement;
+    output_displacement_simulink_clean = out.SRS_Simulation_Displacement;
     t_simulink_clean = out.tout;
 
     %Clean Input/Output
@@ -279,11 +279,9 @@ for signal = 1:signals
     
         %% Get Output Signals from SRS Simulation
 
-        %Muscle Force
-        force_simulink = out.Paralyzed_Model_Force;
-        
-        %Output Paralyzed Displacement
-        output_displacement_simulink = out.Paralyzed_Model_Displacement;
+        %Muscle Force and Output Paralyzed Displacement
+        force_simulink = out.SRS_Simulation_Force;
+        output_displacement_simulink = out.SRS_Simulation_Displacement;
         t_simulink = out.tout;
 
         %% Input/Output for Model Identification
@@ -315,7 +313,7 @@ for signal = 1:signals
 
             LNL=nlident(LNL,Zcur);
             
-            % Evaluate by comparing with the clean Output
+            %Evaluate by comparing with the clean Output
             figure(signal)
             [R, V, yp] = nlid_resid(LNL,Zcur_clean);
 
@@ -337,7 +335,7 @@ for signal = 1:signals
 
             Hammerstein=nlident(Hammerstein,Zcur);
             
-            % Evaluate by comparing with the clean Output
+            %Evaluate by comparing with the clean Output
             figure(signal)
             [R, V, yp] = nlid_resid(Hammerstein,Zcur_clean);
 
@@ -382,7 +380,12 @@ for signal = 1:signals
 
             accuracy_identification = [accuracy_identification V];
 
-            IRF_model_all = [IRF_model_all IRF_model];
+            if signal == 1
+                IRF_model_phys{noise_level} = IRF_model;
+            elseif signal == 2
+                IRF_model_PRBS{noise_level} = IRF_model;
+            end
+            
             IRF_model = [];
             Zcur_all = [Zcur_all Zcur];
 
@@ -403,8 +406,6 @@ for signal = 1:signals
         models_all = [models_all;Hammerstein_all];
     elseif Weiner_model == true
         models_all = [models_all;Weiner_all];
-    elseif Linear_IRF_model == true
-        models_all = [models_all;IRF_model_all];
     end
     
     accuracy_identification = [];
@@ -414,12 +415,12 @@ for signal = 1:signals
     LNL_all = [];
     Hammerstein_all = [];
     Weiner_all = [];
-    IRF_model_all = [];
 
 end
 
 %% Set Initial Parameters for Model Validation with Physiological Signals
 
+%Noise Parameters for Validation
 set_output_noise_power_validation = 0;
 
 %Set Physiological Signal Parameters
@@ -495,7 +496,8 @@ for trial = 1:num_trials
 
     stim_amplitude = desired_displacement*170;  %mV
     stim_frequency = 50;
-
+    
+    %Theoretical Electrical Stimulus
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
     amplitude_modulation = stim_amplitude;
@@ -511,11 +513,9 @@ for trial = 1:num_trials
 
     %% Get Output Signals from SRS Simulation (Simulink Model)
 
-    %Muscle Force
-    force_simulink = out.Paralyzed_Model_Force;
-
-    %Output Paralyzed Displacement
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    %Muscle Force and Output Paralyzed Displacement
+    force_simulink = out.SRS_Simulation_Force;
+    output_displacement_simulink = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
 
     %% Input/Output for Model Validation
@@ -587,10 +587,16 @@ for trial = 1:num_trials
         for signal = 1:signals
             
             for noise_level = 1:noise_level_iters 
-
-                figure(signal)
-                [R, V, yp] = nlid_resid(models_all(signal,noise_level),Zcur);
-                accuracy_validation(trial,noise_level,signal) = V;
+                
+                if signal == 1
+                    figure(signal)
+                    [R, V, yp] = nlid_resid(IRF_model_phys{noise_level},Zcur);
+                    accuracy_validation(trial,noise_level,signal) = V;
+                elseif signal == 2
+                    figure(signal)
+                    [R, V, yp] = nlid_resid(IRF_model_PRBS{noise_level},Zcur);
+                    accuracy_validation(trial,noise_level,signal) = V;
+                end
                 
             end
             
