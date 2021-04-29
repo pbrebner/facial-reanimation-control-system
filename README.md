@@ -1,5 +1,31 @@
 # Facial Reanimation Control System
+Repository for facial reanimation control system project 
 
 Thesis project for Masters of Biological and Biomedical Engineering at McGill University
 
+The project is split into three sections:
+    1. Identifying and evaluating the EMG Response System (ERS)
+    2. Identifying and evaluating the Stimulus Response System (SRS)
+    3. Combining the ERS and the inverse of the SRS to create the Facial Reanimation Control System (FRCS)
 
+## ERS Model
+The ERS represents the healthy side of the face and models healthy side EMG input to a healthy displacement output.
+
+Matlab/Simulink Files:
+    1. ERS_simulation: The Simulink model of the ERS simulation used to generate the simulated data
+    2. ERS_model: Identifies the ERS using the simulated data from the ERS_simulation
+    3. ERS_model_test: Validates the models identified in the ERS_model
+    4. ERS_model_test_freq: Evaluates identified ERS models based on the number of movement pulses in the identification signal
+    5. ERS_model_test_amp: Evaluates the identified ERS models based on either the amplitudem of the identification signal or the record length of the identification signal
+    6. ERS_model_test_acc_vs_noise: Evaluates the identified ERS models based on the amount of output noise added to the ERS_simulation
+
+## SRS Model
+The SRS represents the paralyzed side of the face and models stimulus amplitude modulation input to a paralyzed displacement output.
+
+Matlab/Simulink Files:
+    Same as the ERS Model section but with the SRS versions
+
+## FRCS
+The Facial Reanimation Control System (FRCS) combines the ERS with the inverse of the SRS to model the healthy side displacement to a stimulus amplitude modulation output required to duplicate the healthy movement on the paralyzed side of the face
+
+Matlab/Simulink Files:
