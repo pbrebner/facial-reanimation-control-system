@@ -1,15 +1,28 @@
 %% Stimulus Response System (SRS)
 
 %Identifies the SRS model with simulated data from the SRS simulation, and 
-%plots the results. Can identify models based on a Simple Input, PRBS input 
+%plots the results. Can identify models based on a Sinusoidal (Simple) Input, PRBS input 
 %or a "Physiological" input.
+
+%The Sinusoidal (Simple) input is a 10 second signal that includes a series of five basic 
+%movement pulses of random amplitude
+
+%The PRBS input is a pseudorandom binary sequence, modified to have a
+%variable amplitude that randomly changes every 10 seconds
+
+%The "Physiological input was created to simulate rat movements in an
+%experimental trial. In includes trains of square pulses with amplitude and
+%frequency that randomly change every 10 seconds
 
 %When running the script, you need to provide the following input:
 % 1. Type of Model Structure? LNL/Hammerstein/Wiener/IRF
 %       The Model structure used for the Identified SRS (Default is Wiener)
 % 2. Compare two models (PRBS & Physiological)? Y/N
+%       Whether or not you want to identify models from both PRBS and Physiological Inputs.
+%       running this will compare the two identifoed models at the end
 %if N,
 % 3. Type of Input? Simple/PRBS/Physiological
+%       Choose the type of input you want to use for Model Identification
 
 clc
 clear all
@@ -78,7 +91,7 @@ figNum = 1;
 Fs = 1000;
 Nfft = 200000;
 
-%Sinusoidal (Simple) Signal Parameters (Constant Freq Sine with Modulated Amp)
+%Sinusoidal (Simple) Signal Parameters
 desired_displacement_frequency = 0.5;
 sinusoidal_stimulus_max_amplitude = 0.02;
 sine_stimulus_time = 9.999;
@@ -232,7 +245,6 @@ for num_signals = 1:length(PRBS_stimulus)
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
         Pxx1 = Pxx1';
-
         f1 = (Fs*(0:(L/2))/L)';
 
         stim_frequency = 50;
@@ -273,7 +285,7 @@ for num_signals = 1:length(PRBS_stimulus)
         Pulses_per_interval_test = [];
 
         for j = 1 : nf    
-            t  = 0 : 0.001 : t_interval;         % Time Samples
+            t  = 0 : 0.001 : t_interval;         % Time Intervals
             
             if j == 1
                 Freq = FrequenciesRandom_max;
@@ -328,12 +340,11 @@ for num_signals = 1:length(PRBS_stimulus)
         P1 = abs(Y/L);
         Pxx1 = P1(1:L/2+1);
         Pxx1(2:end-1) = 2*Pxx1(2:end-1);
-
         f1 = (Fs*(0:(L/2))/L)';
 
         desired_displacement = desired_displacement';
 
-        stim_amplitude = desired_displacement*170;  %mV
+        stim_amplitude = desired_displacement*170;
         stim_frequency = 50;
         
         %Theoretical Electrical Stimulus
@@ -359,7 +370,7 @@ for num_signals = 1:length(PRBS_stimulus)
     %% Get Output Signals from SRS Simulation (Simulink)
 
     %Muscle Force
-    force_simulink = out.Paralyzed_Model_Force;
+    force_simulink = out.SRS_Simulation_Force;
 
     %FFT of Muscle Force
     L = length(force_simulink);
@@ -371,7 +382,7 @@ for num_signals = 1:length(PRBS_stimulus)
     f_force = (Fs*(0:(L/2))/L)';
 
     %Input Stimulus
-    input_stimulus = out.Paralyzed_Model_Stimulus;
+    input_stimulus = out.SRS_Simulation_Stimulus;
     
     %FFT of Input Stimulus
     L = length(input_stimulus);
@@ -383,7 +394,7 @@ for num_signals = 1:length(PRBS_stimulus)
     f2 = (Fs*(0:(L/2))/L)';
     
     %Paralyzed Displacement Output
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    output_displacement_simulink = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
 
     %% Input/Output for Model Identification
@@ -658,7 +669,7 @@ for num_signals = 1:length(PRBS_stimulus)
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
     noise_snr = [noise_snr signal_to_noise];
 
-    %% Model Identification (LNL, Hammerstein, Wiener, Linear IRF)
+    %% Model Identification (LNL, Hammerstein, Wiener, or Linear IRF)
 
     if LNL_model == true
 
