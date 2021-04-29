@@ -116,7 +116,7 @@ for signal = 1:signals
             A = PRBS_amplitude;                     %Else set as Constant PRBS Amplitude
         end
 
-        Range = [0,0.001];
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -219,9 +219,9 @@ for signal = 1:signals
     out = sim('ERS_simulation',time);
     
     %Get Clean Outputs from Simulink (EMG, Force, Healthy Displacement)
-    emg_simulink_clean = out.EMGout;
-    force_simulink_clean = out.EMG_Model_Force;
-    output_displacement_simulink_clean = out.EMG_Model_Displacement;
+    emg_simulink_clean = out.ERS_Simulation_EMG;
+    force_simulink_clean = out.ERS_Simulation_Force;
+    output_displacement_simulink_clean = out.ERS_Simulation_Displacement;
     t_simulink_clean = out.tout;
     
     %Clean Input/Output
@@ -245,9 +245,9 @@ for signal = 1:signals
         %% Get Noisy Outputs from ERS simulation (Simulink)
         
         %EMG, Muscle Force, and Healthy Displacement Output
-        emg_simulink = out.EMGout;
-        force_simulink = out.EMG_Model_Force;
-        output_displacement_simulink = out.EMG_Model_Displacement;
+        emg_simulink = out.ERS_Simulation_EMG;
+        force_simulink = out.ERS_Simulation_Force;
+        output_displacement_simulink = out.ERS_Simulation_Displacement;
         t_simulink = out.tout;
         
         %% Noisy Input/Output for Model Identification
@@ -320,6 +320,7 @@ end
 
 %% Set Initial Parameters for Model Validation with Physiological Signals
 
+%Noise Parameters for Validation
 set_output_noise_power_validation = 0;
 
 %Set Physiological Signal Parameters
@@ -416,9 +417,9 @@ for trial = 1:num_trials
     %% Get Output Signals from Simulink
     
     %EMG, Muscle Force, and Healthy Displacement Output
-    emg_simulink = out.EMGout;
-    force_simulink = out.EMG_Model_Force;
-    output_displacement_simulink = out.EMG_Model_Displacement;
+    emg_simulink = out.ERS_Simulation_EMG;
+    force_simulink = out.ERS_Simulation_Force;
+    output_displacement_simulink = out.ERS_Simulation_Displacement;
     t_simulink = out.tout;
 
     %% Input/Output for Model Validation
@@ -448,7 +449,7 @@ for trial = 1:num_trials
 end
 
 %% Plot Accuracy (Identification & Validation) vs Output Noise
-figNum = 10000;
+figNum = 400;
 
 accuracy_identification_all = max(0, accuracy_identification_all);
 
@@ -528,6 +529,4 @@ ylabel('Accuracy (% VAF)','Fontsize',18);
 xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
 grid on
 
-
 tEnd = toc(tStart)/60
-

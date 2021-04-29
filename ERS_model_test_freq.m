@@ -59,6 +59,8 @@ end
 tStart = tic;
 
 %% Set initial Parameters
+
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
@@ -73,6 +75,7 @@ nf = physiological_movement_time/10;            %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
+%Initialize
 NHK_all_temp = [];
 Zcur_all_temp = [];
 NHK_all = [];
@@ -136,7 +139,7 @@ for trial = 1:num_trials_ident
         if use_fr == true
 
             for j = 1 : nf    
-                t  = 0 : 0.001 : t_interval;         % Time Samples
+                t  = 0 : 0.001 : t_interval;         % Time Intervals
 
                 if j == 1
                     Freq = FrequenciesRandom_max;
@@ -229,7 +232,7 @@ for trial = 1:num_trials_ident
 
         %% Execute the ERS Simulation
 
-        %Set Output Noise (as zero)
+        %Set Output Noise as zero
         set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
         output_noise_power = [output_noise_power set_output_noise_power];
 
@@ -242,9 +245,9 @@ for trial = 1:num_trials_ident
         %% Get Output Signals from Simulink
         
         %EMG, Muscle Force and Healthy Displacement Output
-        emg_simulink = out.EMGout;
-        force_simulink = out.EMG_Model_Force;
-        output_displacement_simulink = out.EMG_Model_Displacement;
+        emg_simulink = out.ERS_Simulation_EMG;
+        force_simulink = out.ERS_Simulation_Force;
+        output_displacement_simulink = out.ERS_Simulation_Displacement;
         t_simulink = out.tout;
         
         %% Input/Output for Identification
@@ -304,6 +307,7 @@ end
 
 %% Set Intial Parameters for Model Validation
 
+%Noise Parameters
 noise_snr = [];
 set_output_noise_power = 0;
 output_noise_power = [];
@@ -409,9 +413,9 @@ for trial = 1:num_trials_val
     %% Get Output Signals from ERS Simulation
     
     %EMG, Muscle Force, and Healthy Displacement Output
-    emg_simulink = out.EMGout;
-    force_simulink = out.EMG_Model_Force;
-    output_displacement_simulink = out.EMG_Model_Displacement;
+    emg_simulink = out.ERS_Simulation_EMG;
+    force_simulink = out.ERS_Simulation_Force;
+    output_displacement_simulink = out.ERS_Simulation_Displacement;
     t_simulink = out.tout;
     
     %% Input/Output for Model Validation
@@ -497,9 +501,6 @@ else
     figure(figNum)
     figNum = figNum+1;
     hold on
-    % errorbar(validation_pulses_total,validation_accuracy_mean,validation_accuracy_std,'CapSize',14,'LineWidth',3)
-    % plot(validation_pulses_total,min(validation_accuracy_mean+validation_accuracy_std,100),'--r','LineWidth',2)
-    % plot(validation_pulses_total,max(validation_accuracy_mean-validation_accuracy_std,0),'--r','LineWidth',2)
     plot(validation_pulses_total(1,:),min(validation_accuracy_mean+validation_accuracy_std,100),'LineStyle','none','LineWidth',2)
     plot(validation_pulses_total(1,:),max(validation_accuracy_mean-validation_accuracy_std,0),'LineStyle','none','LineWidth',2)
     patch([validation_pulses_total(1,:) fliplr(validation_pulses_total(1,:))], [min(validation_accuracy_mean+validation_accuracy_std,100) fliplr(max(validation_accuracy_mean-validation_accuracy_std,0))], 'b','FaceAlpha',0.2)

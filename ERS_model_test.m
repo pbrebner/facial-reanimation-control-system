@@ -89,7 +89,8 @@ validation_accuracy_all = [];
 %for validation we test with PRBS signal first, and then with Physiological signal
 PRBS_movement = [true false];
 
-%% Generate Desired Displacement Signals for Validation
+%% Generate Desired Displacement Signals for Model Validation
+
 for signal = 1:length(PRBS_movement)
     
     for trial = 1:num_trials
@@ -111,10 +112,10 @@ for signal = 1:length(PRBS_movement)
                     end
                 end
             else
-                A = PRBS_amplitude;                      %Otherwise set as Constant Amplitude
+                A = PRBS_amplitude;                      %Else set as Constant Amplitude
             end
 
-            Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+            Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
             %Specify the clock period of the signal as 1 sample. 
             %That is, the signal value can change at each time step. 
@@ -233,9 +234,9 @@ for signal = 1:length(PRBS_movement)
         %% Get Output Signals from ERS Simulation Model
 
         %EMG, Muscle Force, and Healthy Displacement Output
-        emg_simulink = out.EMGout;
-        force_simulink = out.EMG_Model_Force;
-        output_displacement_simulink = out.EMG_Model_Displacement;
+        emg_simulink = out.ERS_Simulation_EMG;
+        force_simulink = out.ERS_Siomulation_Force;
+        output_displacement_simulink = out.ERS_Simulation_Displacement;
         t_simulink = out.tout;
 
         %% Input/Output for Model Validation

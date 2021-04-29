@@ -70,7 +70,8 @@ tStart = tic;
 
 %% Set initial Parameters
 
-set_output_noise_power = 0;        %Output Noise Power (Set as zero)
+%Noise Parameters
+set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
 figNum = 1;
@@ -96,11 +97,13 @@ nf = physiological_movement_time/10;            %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
 
+%Initialize
 accuracy = [];
 NHK_all = [];
 Zcur_all = [];
 emg_all = [];
 
+%Compare Models Identified from PRBS and Physiological Inputs
 compare_two_models = str1;
 
 if compare_two_models == true
@@ -145,7 +148,7 @@ for signal = 1:length(PRBS_movement)
         title('Analog Signal of Desired Displacement','Fontsize',28)
         grid on
         
-        %[Pxx1,f1] = pwelch(desired_displacement,gausswin(Nfft),Nfft/2,Nfft,Fs);
+        %[Pxx1,f1] = pwelch(desired_displacement,Nfft,[],Nfft,Fs);
         Nfft = Nfft/10;
         [Pxx1a,f1a] = pwelch(desired_displacement(1,499:1750),Nfft,[],Nfft,Fs);
         [Pxx1b,f1b] = pwelch(desired_displacement(1,2999:4250),Nfft,[],Nfft,Fs);
@@ -173,7 +176,7 @@ for signal = 1:length(PRBS_movement)
             A = PRBS_amplitude;                     %Else set as Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -318,7 +321,7 @@ for signal = 1:length(PRBS_movement)
 
     %% Execute ERS Simulation (Simulink Model)
 
-    %Set Output Noise (set as zero)
+    %Set Output Noise as zero
     set_param('ERS_simulation/Output Noise','Cov','set_output_noise_power')
     output_noise_power = [output_noise_power set_output_noise_power];
 
@@ -329,8 +332,9 @@ for signal = 1:length(PRBS_movement)
     %set_output_noise = set_output_noise_power;
 
     %% Get Output Signals from ERS Simulation Model
+    
     %EMG
-    emg_simulink = out.EMGout;
+    emg_simulink = out.ERS_Simulation_EMG;
     
     %PDF of EMG
     figure(figNum)
@@ -345,8 +349,8 @@ for signal = 1:length(PRBS_movement)
     title('EMG Distribution','Fontsize',24)
     grid on
     
-    % Muscle Force
-    force_simulink = out.EMG_Model_Force;
+    %Muscle Force
+    force_simulink = out.ERS_Simulation_Force;
     
     %Power Spectrum of Muscle Force
     force_simulink_zero = force_simulink - mean(force_simulink);
@@ -362,10 +366,10 @@ for signal = 1:length(PRBS_movement)
     end
     
     %Healthy Output Displacement and Time
-    output_displacement_simulink = out.EMG_Model_Displacement;
+    output_displacement_simulink = out.ERS_Simulation_Displacement;
     t_simulink = out.tout;
     
-    %% Plot some Figures
+    %% Plot ERS Simulation Signals
 
     if simple_movement == true
         
@@ -819,7 +823,7 @@ for signal = 1:length(PRBS_movement)
     
 end
 
-%% Manually Compare the Models Identifified from Different Input Types
+%% Compare the Models Identifified from Different Input Types
 
 if compare_two_models == true
     NHK1 = NHK_all(1);

@@ -53,6 +53,8 @@ elseif strcmp(str1,'Rec')
 end
 
 %% Set initial parameters
+
+%Noise Parameters
 set_output_noise_power = 0;
 noise_snr = [];
 output_noise_power = [];
@@ -72,6 +74,7 @@ else
     PRBS_amplitude = 10;
 end
 
+%Initialize
 NHK_all = [];
 Zcur_all = [];
 
@@ -109,7 +112,7 @@ for record_length = 1:num_record_lengths
             A = PRBS_amplitude(model);                      %Constant Amplitude
         end
 
-        Range = [0,0.001]; %Specify that the single-channel PRBS value switches between -2 and 2
+        Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
 
         %Specify the clock period of the signal as 1 sample. 
         %That is, the signal value can change at each time step. 
@@ -155,9 +158,9 @@ for record_length = 1:num_record_lengths
         %% Get Output Signals from ERS simulation
         
         %EMG, Muscle Force, and Output Displacement
-        emg_simulink = out.EMGout;
-        force_simulink = out.EMG_Model_Force;
-        output_displacement_simulink = out.EMG_Model_Displacement;
+        emg_simulink = out.ERS_Simulation_EMG;
+        force_simulink = out.ERS_Simulation_Force;
+        output_displacement_simulink = out.ERS_Simulation_Displacement;
         t_simulink = out.tout;
         
         %% Input/Output for Model Identification
@@ -202,6 +205,7 @@ end
 
 %% Set Initial Parameters for Model Validation
 
+%Noise Parameters
 noise_snr = [];
 set_output_noise_power = 0;
 output_noise_power = [];
@@ -305,9 +309,9 @@ for trial = 1:num_trials
     %% Get Output Signals from Simulink
     
     %EMG, Muscle Force and Healthy Displacement Output
-    emg_simulink = out.EMGout;
-    force_simulink = out.EMG_Model_Force;
-    output_displacement_simulink = out.EMG_Model_Displacement;
+    emg_simulink = out.ERS_Simulation_EMG;
+    force_simulink = out.ERS_Simulation_Force;
+    output_displacement_simulink = out.ERS_Simulation_Displacement;
     t_simulink = out.tout;
     
     %% Input/Output for Model Validation
@@ -323,7 +327,12 @@ for trial = 1:num_trials
     
     %% Model Validation
     
-    num_models = max(num_models_for_ident, num_record_lengths);
+    if variable_time == true
+        num_models = num_record_lengths;
+    elseif variable_signal == true
+        num_models = num_models_for_ident;
+    end
+    
     set(Zcur, 'chanNames', {'Predicted (m)' 'Displacement (m)'});
     
     %Validates the current Physioloigcal Signal on all identified models
@@ -418,6 +427,4 @@ if variable_time == true
     grid on
 end
 
-
 tEnd = toc(tStart)/60
-
