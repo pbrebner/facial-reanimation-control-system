@@ -43,6 +43,8 @@ chance_of_zero = false;
 
 %% Generate the Desired Displacement Signal for ERS Simulation
 
+%This is used to get an EMG Signal for Input to the FRCS
+
 if PRBS_movement == true
 
     t_total = 0:0.001:PRBS_movement_time;
@@ -151,15 +153,7 @@ Frequency = desired_displacement*14000;  %Hz
 
 neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
 
-% figure(figNum)
-% figNum = figNum+1;
-% plot(t_total,neural)
-% title('Neural Command','Fontsize',18)
-% xlabel('Time (s)','Fontsize',16)
-% ylabel('Amplitude (% of MUs)', 'Fontsize', 16)
-
 neural_simulink = [t_total' neural];
-
 
 %% Generate EMG Signal use EMG Simulation (Simulink Model)
 
@@ -187,18 +181,9 @@ EMG_response_model_IRF = EMG_response_model{1,2};
 set(EMG_response_model_IRF, 'domainIncr', 1.0e-3);
 EMG_response_model{1,2} = EMG_response_model_IRF;
 
-% set(EMG_response_model,'domainIncr',0.001)
-
 control_system_displacement = nlsim(EMG_response_model,EMG_simulink);
 set(control_system_displacement,'domainIncr',0.001);
 %control_system_displacement = control_system_displacement.dataSet;
-
-% figure(figNum)
-% figNum = figNum+1;
-% plot(t_total,control_system_displacement);
-% title('Control System Displacement', 'Fontsize', 18)
-% xlabel('Time (s)','Fontsize',16)
-% ylabel('Displacement (m)', 'Fontsize', 16)
 
 %Set domain increments of Stimulus response model
 % stimulus_response_model_IRF = stimulus_response_model{1,1};
@@ -207,14 +192,6 @@ set(control_system_displacement,'domainIncr',0.001);
 
 control_system_output = nlsim(stimulus_response_model,control_system_displacement);
 %control_system_stimulus_output = control_system_stimulus_output.dataSet;
-
-% figure(figNum)
-% figNum = figNum+1;
-% set(control_system_stimulus_output,'domainIncr',0.001)
-% plot(t_total,control_system_stimulus_output);
-% title('Control System Stimulus Output', 'Fontsize', 18)
-% xlabel('Time (s)','Fontsize',16)
-% ylabel('Amplitude (V)', 'Fontsize', 16)
 
 %% Plot all in One Figure
 
@@ -419,16 +396,15 @@ amplitude_modulation = control_system_output_double;
 amplitude_modulation_simulink = [(t_total(1,1:end-1999))' amplitude_modulation(1000:end-1000,:)];
 
 % set_param('Paralyzed_Model_Simulink_ControlSystemTest/Output Noise','Cov','set_output_noise_power')
-set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
+set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
 %output_noise_power = [output_noise_power set_output_noise_power];
 
 %Run Simulink;
 time = length(t_total(1,1:end-2000))/1000;
-% out = sim('Paralyzed_Model_Simulink_ControlSystemTest',time);
-out = sim('Paralyzed_Model_Simulink',time);
+out = sim('SRS_simulation',time);
 
-input_stimulus = out.Paralyzed_Model_Stimulus;
-predicted_paralyzed_displacement = out.Paralyzed_Model_Displacement;
+input_stimulus = out.SRS_Simulation_Stimulus;
+predicted_paralyzed_displacement = out.SRS_Simulation_Displacement;
 t_simulink = out.tout;
 
 %plot the stimulus that is created based on the amplitude modulation
@@ -449,7 +425,6 @@ plot(t_total(1,1:end-1999),desired_displacement(:,1000:end-1000))
 ax = gca;
 ax.FontSize = 10;
 title('(a) Desired Displacement', 'Fontsize', 12)
-% xlabel('Time (s)', 'Fontsize', 12)
 ylabel('Displacement (m)', 'Fontsize', 12)
 grid on
 
@@ -458,7 +433,6 @@ plot(t_total(1,1:end-1999),predicted_healthy_displacement)
 ax = gca;
 ax.FontSize = 10;
 title('(b) Predicted Healthy Displacement, Pos_H(t)', 'Fontsize', 12)
-% xlabel('Time (s)', 'Fontsize', 12)
 ylabel('Displacement (m)', 'Fontsize', 12)
 grid on
 
@@ -467,7 +441,6 @@ plot(t_total(1,1:end-1999),predicted_paralyzed_displacement)
 ax = gca;
 ax.FontSize = 10;
 title('(c) Predicted Paralyzed Displacement, Pos_P(t)', 'Fontsize', 12)
-% xlabel('Time (s)', 'Fontsize', 12)
 ylabel('Displacement (m)', 'Fontsize', 12)
 grid on
 
@@ -492,14 +465,12 @@ figNum = figNum+1;
 subplot(3,1,1)
 plot(t_total(1,1:end-1999),desired_displacement(:,1000:end-1000))
 title('(a) Desired Displacement', 'Fontsize', 12)
-% xlabel('Time (s)', 'Fontsize', 12)
 ylabel('Displacement (m)', 'Fontsize', 12)
 grid on
 
 subplot(3,1,2)
 plot(t_total(1,1:end-1999),predicted_paralyzed_displacement)
 title('(b) Predicted Paralyzed Displacement, Pos_P(t)', 'Fontsize', 12)
-% xlabel('Time (s)', 'Fontsize', 12)
 ylabel('Displacement (m)', 'Fontsize', 12)
 grid on
 
@@ -520,7 +491,6 @@ residuals = predicted_healthy_displacement - predicted_paralyzed_displacement;
 
 Nfft = 10000;
 residuals_zero = residuals - mean(residuals);
-%[Prr,f] = pwelch(residuals_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
 [Prr,f] = pwelch(residuals_zero,Nfft,[],Nfft,Fs);
 
 figure(figNum)
@@ -591,8 +561,6 @@ predicted_healthy_displacement_zero = predicted_healthy_displacement - mean(pred
 predicted_paralyzed_displacement_zero = predicted_paralyzed_displacement - mean(predicted_paralyzed_displacement);
 
 Nfft = 10000;
-%[Pxx,~] = pwelch(predicted_healthy_displacement_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
-%[Pyy,f] = pwelch(predicted_paralyzed_displacement_zero,gausswin(Nfft),Nfft/2,Nfft,Fs);
 [Pxx,~] = pwelch(predicted_healthy_displacement_zero,Nfft,[],Nfft,Fs);
 [Pyy,f] = pwelch(predicted_paralyzed_displacement_zero,Nfft,[],Nfft,Fs);
 
@@ -633,7 +601,6 @@ maxlag = floor(length(predicted_healthy_displacement_zero)*0.05);
 lags = lags/Fs;
 subplot(3,1,1),plot(lags,Rxx)
 title('(a) Auto-Correlation of Predicted Healthy Displacement','Fontsize',16)
-% xlabel('Time (s)','Fontsize',16)
 ylabel('Correlation','Fontsize',16)
 grid on
 
@@ -641,7 +608,6 @@ grid on
 lags = lags/Fs;
 subplot(3,1,2),plot(lags,Ryy)
 title('(b) Auto-Correlation of Predicted Paralyzed Displacement','Fontsize',16)
-% xlabel('Time (s)','Fontsize',16)
 ylabel('Correlation','Fontsize',16)
 grid on
 
@@ -675,7 +641,6 @@ ax = gca;
 ax.FontSize = 14;
 title('(a) Gain','Fontsize',16);
 ylabel('Gain (dB)','Fontsize',16);
-% xlabel('Frequency (Hz)','Fontsize',20);
 grid on;
 
 subplot(3,1,2),plot(f(1:600,:),P(1:600,:));
@@ -683,7 +648,6 @@ ax = gca;
 ax.FontSize = 14;
 title('(b) Phase Shift','Fontsize',16);
 ylabel('Phase (degrees)','Fontsize',16);
-% xlabel('Frequency (Hz)','Fontsize',20);
 grid on;
 
 subplot(3,1,3),plot(f(1:600,:),Cxy(1:600,:));
@@ -724,7 +688,6 @@ ax = gca;
 ax.FontSize = 14;
 title('(a) Gain','Fontsize',16);
 ylabel('Gain (dB)','Fontsize',16);
-% xlabel('Frequency (Hz)','Fontsize',20);
 grid on;
 
 subplot(3,1,2),plot(f(1:31,:),P(1:31,:));
@@ -732,7 +695,6 @@ ax = gca;
 ax.FontSize = 14;
 title('(b) Phase Shift','Fontsize',16);
 ylabel('Phase (degrees)','Fontsize',16);
-% xlabel('Frequency (Hz)','Fontsize',20);
 grid on;
 
 subplot(3,1,3),plot(f(1:31,:),Cxy(1:31,:));
