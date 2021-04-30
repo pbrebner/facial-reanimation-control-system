@@ -14,6 +14,48 @@ clear all
 
 %% User Input Prompts
 
+prompt1 = 'Type of SRS Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Wiener]: ';
+str1 = input(prompt1,'s');
+if ~strcmp(str1,'LNL') & ~strcmp(str1,'Hamm') & ~strcmp(str1,'Wiener') & ~strcmp(str1,'IRF') & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Wiener';
+end
+model_type = str1;
+
+prompt2 = 'Compare two models (PRBS & Physiological)? Y/N [Y]: ';
+str2 = input(prompt2,'s');
+if ~strcmp(str2,'Y') & ~strcmp(str2,'N') & ~isempty(str2)
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 'Y';
+end
+
+if strcmp(str2,'Y')
+    str2 = true;
+elseif strcmp(str2,'N')
+    str2 = false;
+end
+
+if str2 == false
+    prompt3 = 'Type of Input? PRBS/Physiological(Phys) [PRBS]: ';
+    str3 = input(prompt3,'s');
+    if ~strcmp(str3,'PRBS') & ~strcmp(str3,'Phys') & ~isempty(str3)
+        disp('Invalid Input')
+        return
+    elseif isempty(str3)
+        str3 = 'PRBS';
+    end
+    
+    if strcmp(str3,'PRBS')
+        PRBS_signal = true;
+    elseif strcmp(str3,'Phys')
+        PRBS_signal = false;
+    end 
+    input_type = str3;
+end
 
 tStart = tic;
 
@@ -21,8 +63,8 @@ tStart = tic;
 
 %Noise Parameters
 set_output_noise_power = 0;
-noise_snr_NHK = [];
-noise_snr_LNL = [];
+noise_snr_ERS = [];
+noise_snr_SRS = [];
 output_noise_power = [];
 figNum = 1;
 
@@ -30,73 +72,67 @@ figNum = 1;
 Fs = 1000; 
 Nfft = 10000;
 
-PRBS_stimulus = true;
-% physiological_stimulus = true;
-
 %PRBS Signal Parameters
 PRBS_movement_time = 180;
 PRBS_stimulus_time = 480;
-variable_amplitude = true;
+variable_amplitude_ERS = true;
 variable_amplitude_SRS = true;
-% N = PRBS_stimulus_time/10;
-% M = 10000;
-PRBS_amplitude = 10; %mm
+PRBS_amplitude_ERS = 10; %mm
 PRBS_amplitude_SRS = 20; %mm
 
 %Set Physiological Signal Parameters
 physiological_movement_time = 180;
 physiological_stimulus_time = 480;
-physiological_stimulus_max_amplitude = 0.01;
+physiological_stimulus_max_amplitude_ERS = 0.01;
 physiological_stimulus_max_amplitude_SRS = 0.02;
 fr = 0.1;                                         %Frequency distribution mean (Hz)
-sig_NHK = 0.6;                                    %Std of Frequency Distribution (Hz)
+sig_ERS = 0.6;                                    %Std of Frequency Distribution (Hz)
 sig_SRS = 0.8;                                    %Std of Frequency Distribution (Hz)
-W_NHK = 0.55;
+W_ERS = 0.55;
 W_SRS = 0.45;
-% nf = 48;                                        %number of random signal changes
-% t_interval = physiological_stimulus_time/nf;    %Length of random interval (s)
 chance_of_zero = false;
 
 %Initialize Models
-NHK_all = [];
-LNL_all = [];
-Hammerstein_all = [];
-Weiner_all = [];
-% IRF_all = [];
-accuracy_NHK = [];
-accuracy_LNL = [];
-accuracy_Hammerstein = [];
-accuracy_Weiner = [];
-accuracy_IRF = [];
-pred_NHK = [];
-pred_LNL = [];
-pred_Hammerstein = [];
-pred_Weiner = [];
-pred_IRF = [];
-Zcur_NHK_all = [];
-Zcur_LNL_all = [];
-Zcur_Hammerstein_all = [];
-Zcur_Weiner_all = [];
-Zcur_IRF_all = [];
+ERS_all = [];
+SRS_all = [];
+%Identification Accuracy
+accuracy_ERS = [];
+accuracy_SRS = [];
+%Predicted Displacement
+pred_ERS = [];
+pred_SRS = [];
+%Input/Output for Identification
+Zcur_ERS = [];
+Zcur_SRS = [];
 
 %Compare PRBS and Physiological Models
-compare_two_models = true;
+compare_two_models = str2;
 
 if compare_two_models == true
-    PRBS_stimulus = [true false];
+    PRBS_signal = [true false];
 end
 
 %SRS Model Structure
 LNL_model = false;
 Hammerstein_model = false;
-Weiner_model = true;
-Linear_IRF_model = true;
+Weiner_model = false;
+Linear_IRF_model = false;
+
+if strcmp(str1,'LNL')
+    LNL_model = true;
+elseif strcmp(str1,'Hamm')
+    Hammerstein_model = true;
+elseif strcmp(str1,'Wiener')
+    Weiner_model = true;
+elseif strcmp(str1,'IRF')
+    Linear_IRF_model = true;
+end
 
 %% Generate Desired Displacement Signals for ERS Model
 
-for num_signals = 1:length(PRBS_stimulus)
+for num_signals = 1:length(PRBS_signal)
     
-    if PRBS_stimulus(num_signals) == true
+    if PRBS_signal(num_signals) == true
 
         t_total = 0:0.001:PRBS_movement_time;
         time = PRBS_movement_time;
@@ -104,20 +140,20 @@ for num_signals = 1:length(PRBS_stimulus)
         N = PRBS_movement_time/10;
         M = 10000;
 
-        A = [0];                            %Intialize amplitude
-        if variable_amplitude == true   
+        A = [0];                            %Intialize Amplitude
+        if variable_amplitude_ERS == true   
             for k = 1:N
                 if k == 1
-                    R = PRBS_amplitude;
+                    R = PRBS_amplitude_ERS;
                 else
-                    R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and max PRBS Amplitude
+                    R = rand(1,1)*PRBS_amplitude_ERS;   %Randomly generate a number between 0 and max PRBS Amplitude
                 end
                 for j = 1:M
                     A = [A R];
                 end
             end
         else
-            A = PRBS_amplitude;              % Else set as Constant Amplitude
+            A = PRBS_amplitude_ERS;              % Else set as Constant Amplitude
         end
 
         Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
@@ -144,12 +180,12 @@ for num_signals = 1:length(PRBS_stimulus)
         t_total = 0:0.001:physiological_movement_time;
         time = physiological_movement_time;
 
-        FR = makedist('Normal','mu',fr,'sigma',sig_NHK);
+        FR = makedist('Normal','mu',fr,'sigma',sig_ERS);
         FrequenciesRandom_max = 1.8;
         FrequenciesRandom = truncate(FR,0,FrequenciesRandom_max);
         freq_distribution = random(FrequenciesRandom,10000,1);
 
-        AR = makedist('Uniform','lower',0,'upper',physiological_stimulus_max_amplitude);  %Full Amplitude Range
+        AR = makedist('Uniform','lower',0,'upper',physiological_stimulus_max_amplitude_ERS);  %Full Amplitude Range
         AmplitudesRandom = AR;
         amp_distribution = random(AmplitudesRandom,10000,1);
 
@@ -165,7 +201,7 @@ for num_signals = 1:length(PRBS_stimulus)
             
             if j == 1
                 Freq = FrequenciesRandom_max;
-                A = physiological_stimulus_max_amplitude;
+                A = physiological_stimulus_max_amplitude_ERS;
             else
                 Freq = random(FrequenciesRandom,1,1);
                 A = random(AmplitudesRandom,1,1);
@@ -180,7 +216,7 @@ for num_signals = 1:length(PRBS_stimulus)
             if nums == 0
                 g = 1/Freq;
                 D = (1:g:t_interval)';     % pulse delay times
-                data = (A*pulstran(t,D,@rectpuls,W_NHK))';
+                data = (A*pulstran(t,D,@rectpuls,W_ERS))';
                 stim_frequency = Freq;
                 Pulses_per_interval = t_interval/g;
                 data(end) = [];
@@ -215,7 +251,7 @@ for num_signals = 1:length(PRBS_stimulus)
     figure(figNum)
     figNum = figNum+1;
     plot(t_total,neural)
-    title('Neural Input')
+    title('Neural Command Input')
     
     %% Execute ERS Simulation (Simulink Model)
     
@@ -232,27 +268,27 @@ for num_signals = 1:length(PRBS_stimulus)
     %% Get Output Signals from ERS Simulation
     
     %EMG, Muscle Force, and Healthy Displacement Output
-    emg_simulink = out.EMGout;
-    force_simulink = out.EMG_Model_Force;
-    output_displacement_simulink = out.EMG_Model_Displacement;
+    emg_simulink = out.ERS_Simulation_EMG;
+    force_simulink = out.ERS_Simulation_Force;
+    output_displacement_simulink = out.ERS_Simulation_Displacement;
     t_simulink = out.tout;
     
-    %Plot Healthy Displacement Output and Spectrum
-    output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
-    [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,1,1),plot(t_total,output_displacement_simulink)
-    title('Simulated Healthy Displacement, Pos_H(t)','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Displacement (m)','Fontsize',20)
-    grid on
-
-    subplot(2,1,2),semilogy(f(1:200,:),Pxx(1:200,:));
-    title('Healthy Displacement Spectrum','Fontsize',20);
-    ylabel('PSD','Fontsize',20);
-    xlabel('Frequency (Hz)','Fontsize',20);
-    grid on;
+%     %Plot Healthy Displacement Output and Displacement Spectrum
+%     output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
+%     [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
+%     figure(figNum)
+%     figNum = figNum+1;
+%     subplot(2,1,1),plot(t_total,output_displacement_simulink)
+%     title('Simulated Healthy Displacement, Pos_H(t)','Fontsize',20)
+%     xlabel('Time (s)','Fontsize',20)
+%     ylabel('Displacement (m)','Fontsize',20)
+%     grid on
+% 
+%     subplot(2,1,2),semilogy(f(1:200,:),Pxx(1:200,:));
+%     title('Healthy Displacement Spectrum','Fontsize',20);
+%     ylabel('PSD','Fontsize',20);
+%     xlabel('Frequency (Hz)','Fontsize',20);
+%     grid on;
     
     %% Input/Output for ERS Identification
     
@@ -263,7 +299,7 @@ for num_signals = 1:length(PRBS_stimulus)
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
-    noise_snr_NHK = [noise_snr_NHK signal_to_noise];
+    noise_snr_ERS = [noise_snr_ERS signal_to_noise];
     
     %% ERS Model Identification
     
@@ -277,7 +313,7 @@ for num_signals = 1:length(PRBS_stimulus)
     set(I,'nLags',2400); 
     NHK{1,2}=I;
     
-    %Idnetify and Normalize Linear Element
+    %Identify and Normalize Linear Element
     NHK=nlident(NHK,Zcur);
     NHK = normCoefLE(NHK);
     
@@ -285,36 +321,36 @@ for num_signals = 1:length(PRBS_stimulus)
     figNum = figNum+1;
     [R, V, yp] = nlid_resid(NHK,Zcur);
     
-    %Spectrum of Predicted Displacement
-    pred_zero = double(yp) - mean(double(yp));
-    [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,1,1),plot(t_total,double(yp))
-    title('Predicted Healthy Displacement for ERS Identification, Pos_H(t)','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Displacement (m)','Fontsize',20)
-    grid on
+    accuracy_ERS = [accuracy_ERS V];
+    pred_ERS = [pred_ERS double(yp)];
 
-    subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
-    title('Predicted Healthy Displacement Spectrum','Fontsize',20);
-    ylabel('PSD','Fontsize',20);
-    xlabel('Frequency (Hz)','Fontsize',20);
-    grid on;
-    
-    accuracy_NHK = [accuracy_NHK V];
-    pred_NHK = [pred_NHK double(yp)];
-
-    NHK_all = [NHK_all NHK];
-    Zcur_NHK_all = [Zcur_NHK_all Zcur];
+    ERS_all = [ERS_all NHK];
+    Zcur_ERS = [Zcur_ERS Zcur];
     
 end
 
+% %Spectrum of Predicted Displacement
+% pred_zero = double(yp) - mean(double(yp));
+% [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
+% figure(figNum)
+% figNum = figNum+1;
+% subplot(2,1,1),plot(t_total,double(yp))
+% title('Predicted Healthy Displacement for ERS Identification, Pos_H(t)','Fontsize',20)
+% xlabel('Time (s)','Fontsize',20)
+% ylabel('Displacement (m)','Fontsize',20)
+% grid on
+% 
+% subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
+% title('Predicted Healthy Displacement Spectrum','Fontsize',20);
+% ylabel('PSD','Fontsize',20);
+% xlabel('Frequency (Hz)','Fontsize',20);
+% grid on;
+
 %% Generate Desired Displacement Signals for SRS Model Identification
 
-for num_signals = 1:length(PRBS_stimulus)
+for num_signals = 1:length(PRBS_signal)
     
-    if PRBS_stimulus(num_signals) == true
+    if PRBS_signal(num_signals) == true
 
         t_total = 0:0.001:PRBS_stimulus_time;
         time = PRBS_stimulus_time;
@@ -436,7 +472,7 @@ for num_signals = 1:length(PRBS_stimulus)
     figure(figNum)
     figNum = figNum+1;
     plot(t_total,amplitude_modulation)
-    title('Amplitude Modulation')
+    title('Amplitude Modulation Input')
     
     %% Execute SRS Simulation (Simulink Model)
     
@@ -453,27 +489,27 @@ for num_signals = 1:length(PRBS_stimulus)
     %% Get Output Signals from SRS Simulation
 
     %Muscle Force, Electrical Stimulus, and Paralyzed Displacement Output
-    force_simulink = out.Paralyzed_Model_Force;
-    input_stimulus = out.Paralyzed_Model_Stimulus;
-    output_displacement_simulink = out.Paralyzed_Model_Displacement;
+    force_simulink = out.SRS_Simulation_Force;
+    input_stimulus = out.SRS_Simulation_Stimulus;
+    output_displacement_simulink = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
     
-    %Plot Paralyzed Displacement Output and Spectrum
-    output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
-    [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
-    figure(figNum)
-    figNum = figNum+1;
-    subplot(2,1,1),plot(t_total,output_displacement_simulink)
-    title('Simulated Paralyzed Displacement, Pos_P(t)','Fontsize',20)
-    xlabel('Time (s)','Fontsize',20)
-    ylabel('Displacement (m)','Fontsize',20)
-    grid on
-
-    subplot(2,1,2),semilogy(f(1:200,:),Pxx(1:200,:));
-    title('Paralyzed Displacement Spectrum','Fontsize',20);
-    ylabel('PSD','Fontsize',20);
-    xlabel('Frequency (Hz)','Fontsize',20);
-    grid on;
+%     %Plot Paralyzed Displacement Output and Spectrum
+%     output_displacement_simulink_zero = output_displacement_simulink - mean(output_displacement_simulink);
+%     [Pxx,f] = pwelch(output_displacement_simulink_zero,[],[],[],Fs);
+%     figure(figNum)
+%     figNum = figNum+1;
+%     subplot(2,1,1),plot(t_total,output_displacement_simulink)
+%     title('Simulated Paralyzed Displacement, Pos_P(t)','Fontsize',20)
+%     xlabel('Time (s)','Fontsize',20)
+%     ylabel('Displacement (m)','Fontsize',20)
+%     grid on
+% 
+%     subplot(2,1,2),semilogy(f(1:300,:),Pxx(1:300,:));
+%     title('Paralyzed Displacement Spectrum','Fontsize',20);
+%     ylabel('PSD','Fontsize',20);
+%     xlabel('Frequency (Hz)','Fontsize',20);
+%     grid on;
 
     %% Input/Output for SRS Identification
     
@@ -484,7 +520,7 @@ for num_signals = 1:length(PRBS_stimulus)
     output_noise_simulink = out.Output_Noise;
 
     signal_to_noise = snr(output_displacement_simulink, output_noise_simulink);
-    noise_snr_LNL = [noise_snr_LNL signal_to_noise];
+    noise_snr_SRS = [noise_snr_SRS signal_to_noise];
     
     %% SRS Model Identification (LNL, Hammerstein, Wiener, or Linear IRF)
     
@@ -501,28 +537,11 @@ for num_signals = 1:length(PRBS_stimulus)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(LNL,Zcur);
 
-        %Spectrum of Predicted Displacement
-        pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,1,1),plot(t_total,double(yp))
-        title('Predicted Paralyzed Displacement for SRS Identification, Pos_P(t)','Fontsize',20)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
+        accuracy_SRS = [accuracy_SRS V];
+        pred_SRS = [pred_SRS double(yp)];
 
-        subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
-        title('Predicted Paralyzed Displacement Spectrum','Fontsize',20);
-        ylabel('PSD','Fontsize',20);
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on;
-
-        accuracy_LNL = [accuracy_LNL V];
-        pred_LNL = [pred_LNL double(yp)];
-
-        LNL_all = [LNL_all LNL];
-        Zcur_LNL_all = [Zcur_LNL_all Zcur];
+        SRS_all = [SRS_all LNL];
+        Zcur_SRS = [Zcur_SRS Zcur];
         
     elseif Hammerstein_model == true
         
@@ -534,28 +553,11 @@ for num_signals = 1:length(PRBS_stimulus)
         
         Hammerstein=nlident(Hammerstein,Zcur);
         
-        %Spectrum of Predicted Displacement
-        pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,1,1),plot(t_total,double(yp))
-        title('Predicted Displacement for SRS Identification','Fontsize',20)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
-
-        subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
-        title('Predicted Displacement Spectrum','Fontsize',20);
-        ylabel('PSD','Fontsize',20);
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on;
+        accuracy_SRS = [accuracy_SRS V];
+        pred_SRS = [pred_SRS double(yp)];
         
-        accuracy_Hammerstein = [accuracy_Hammerstein V];
-        pred_Hammerstein = [pred_Hammerstein double(yp)];
-        
-        Hammerstein_all = [Hammerstein_all Hammerstein];
-        Zcur_Hammerstein_all = [Zcur_Hammerstein_all Zcur];
+        SRS_all = [SRS_all Hammerstein];
+        Zcur_SRS = [Zcur_SRS Zcur];
         
     elseif Weiner_model == true
         
@@ -571,28 +573,11 @@ for num_signals = 1:length(PRBS_stimulus)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(Weiner,Zcur);
         
-        %Spectrum of Predicted Displacement
-        pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,1,1),plot(t_total,double(yp))
-        title('Predicted Paralyzed Displacement for SRS Identification, Pos_P(t)','Fontsize',20)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
-
-        subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
-        title('Predicted Paralyzed Displacement Spectrum','Fontsize',20);
-        ylabel('PSD','Fontsize',20);
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on;
+        accuracy_SRS = [accuracy_SRS V];
+        pred_SRS = [pred_SRS double(yp)];
         
-        accuracy_Weiner = [accuracy_Weiner V];
-        pred_Weiner = [pred_Weiner double(yp)];
-        
-        Weiner_all = [Weiner_all Weiner];
-        Zcur_Weiner_all = [Zcur_Weiner_all Zcur];
+        SRS_all = [SRS_all Weiner];
+        Zcur_SRS = [Zcur_SRS Zcur];
         
     elseif Linear_IRF_model == true
         
@@ -602,35 +587,35 @@ for num_signals = 1:length(PRBS_stimulus)
         figNum = figNum+1;
         [R, V, yp] = nlid_resid(IRF_model,Zcur);
         
-        %Spectrum of Predicted Displacement
-        pred_zero = double(yp) - mean(double(yp));
-        [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
-        figure(figNum)
-        figNum = figNum+1;
-        subplot(2,1,1),plot(t_total,double(yp))
-        title('Predicted Displacement for SRS Identification','Fontsize',20)
-        xlabel('Time (s)','Fontsize',20)
-        ylabel('Displacement (m)','Fontsize',20)
-        grid on
+        accuracy_SRS = [accuracy_SRS V];
+        pred_SRS = [pred_SRS double(yp)];
 
-        subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
-        title('Predicted Displacement Spectrum','Fontsize',20);
-        ylabel('PSD','Fontsize',20);
-        xlabel('Frequency (Hz)','Fontsize',20);
-        grid on;
-        
-        accuracy_IRF = [accuracy_IRF V];
-        pred_IRF = [pred_IRF double(yp)];
-
-        if compare_two_models == true && PRBS_stimulus(num_signals) == true
+        if compare_two_models == true && PRBS_signal(num_signals) == true
             IRF1 = IRF_model;
-        elseif compare_two_models == true && PRBS_stimulus(num_signals) == false
+        elseif compare_two_models == true && PRBS_signal(num_signals) == false
             IRF2 = IRF_model;
         end
         
-        Zcur_IRF_all = [Zcur_IRF_all Zcur];
+        Zcur_SRS = [Zcur_SRS Zcur];
         
     end
+    
+%     %Spectrum of Predicted Displacement
+%     pred_zero = double(yp) - mean(double(yp));
+%     [Pyy,f] = pwelch(pred_zero,[],[],[],Fs);
+%     figure(figNum)
+%     figNum = figNum+1;
+%     subplot(2,1,1),plot(t_total,double(yp))
+%     title('Predicted Displacement for SRS Identification','Fontsize',20)
+%     xlabel('Time (s)','Fontsize',20)
+%     ylabel('Displacement (m)','Fontsize',20)
+%     grid on
+% 
+%     subplot(2,1,2),semilogy(f(1:200,:),Pyy(1:200,:));
+%     title('Predicted Displacement Spectrum','Fontsize',20);
+%     ylabel('PSD','Fontsize',20);
+%     xlabel('Frequency (Hz)','Fontsize',20);
+%     grid on;
     
 end
 %% Plots the Models (Compares the PRBS and Physiological Models)
@@ -642,8 +627,8 @@ lower_limit = -0.00063;
     
 if compare_two_models == true && LNL_model == true
     
-    NHK1 = NHK_all(1);
-    NHK2 = NHK_all(2);
+    NHK1 = ERS_all(1);
+    NHK2 = ERS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -673,8 +658,8 @@ if compare_two_models == true && LNL_model == true
     grid on
     hold off
     
-    LNL1 = LNL_all(1);
-    LNL2 = LNL_all(2);
+    LNL1 = SRS_all(1);
+    LNL2 = SRS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -717,8 +702,8 @@ if compare_two_models == true && LNL_model == true
     
 elseif compare_two_models == true && Hammerstein_model == true
     
-    NHK1 = NHK_all(1);
-    NHK2 = NHK_all(2);
+    NHK1 = ERS_all(1);
+    NHK2 = ERS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -748,8 +733,8 @@ elseif compare_two_models == true && Hammerstein_model == true
     grid on
     hold off
     
-    Hammerstein1 = Hammerstein_all(1);
-    Hammerstein2 = Hammerstein_all(2);
+    Hammerstein1 = SRS_all(1);
+    Hammerstein2 = SRS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -780,8 +765,8 @@ elseif compare_two_models == true && Hammerstein_model == true
     
 elseif compare_two_models == true && Weiner_model == true
     
-    NHK1 = NHK_all(1);
-    NHK2 = NHK_all(2);
+    NHK1 = ERS_all(1);
+    NHK2 = ERS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -811,8 +796,8 @@ elseif compare_two_models == true && Weiner_model == true
     grid on
     hold off
     
-    Weiner1 = Weiner_all(1);
-    Weiner2 = Weiner_all(2);
+    Weiner1 = SRS_all(1);
+    Weiner2 = SRS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -844,8 +829,8 @@ elseif compare_two_models == true && Weiner_model == true
     
 elseif compare_two_models == true && Linear_IRF_model == true
     
-    NHK1 = NHK_all(1);
-    NHK2 = NHK_all(2);
+    NHK1 = ERS_all(1);
+    NHK2 = ERS_all(2);
     
     figure(figNum)
     figNum = figNum+1;
@@ -892,7 +877,7 @@ elseif compare_two_models == true && Linear_IRF_model == true
     
 elseif compare_two_models == false && LNL_model == true
     
-    NHK1 = NHK_all(1);
+    NHK1 = ERS_all(1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -914,7 +899,7 @@ elseif compare_two_models == false && LNL_model == true
     xlabel('Lags (s)','Fontsize',18)
     grid on
     
-    LNL1 = LNL_all(1);
+    LNL1 = SRS_all(1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -947,7 +932,7 @@ elseif compare_two_models == false && LNL_model == true
     
 elseif compare_two_models == false && Weiner_model == true
     
-    NHK1 = NHK_all(1);
+    NHK1 = ERS_all(1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -969,7 +954,7 @@ elseif compare_two_models == false && Weiner_model == true
     xlabel('Lags (s)','Fontsize',18)
     grid on
     
-    Weiner1 = Weiner_all(1);
+    Weiner1 = SRS_all(1);
     
     figure(figNum)
     figNum = figNum+1;
@@ -994,7 +979,7 @@ elseif compare_two_models == false && Weiner_model == true
     
 else
     
-    NHK1 = NHK_all(1);
+    NHK1 = ERS_all(1);
     
     figure(figNum)
     figNum = figNum+1;
