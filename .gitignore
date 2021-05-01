@@ -1,11 +1,4 @@
 slprj
 *.asv
-
-EMG_simulation_simulink.slx.original
-EMG_simulation_simulink.slxc
-
-ERS_simulation.slx.original
-ERS_simulation.slxc
-
-SRS_simulation.slx.original
-SRS_simulation.slxc
+*.slx.original
+*.slxc
