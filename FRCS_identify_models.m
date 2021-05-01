@@ -1,13 +1,21 @@
 %% Facial Reanimation Control System (FRCS) - Identifiy ERS Model and SRS Model
 
-% Identifies a Hammerstein Model for the healthy side and a Model for
-% the paralyzed side. Can use both types of inputs (PRBS and Physiological)
-% and have the option to compare the resulting model from each type of
-% movement
+% Identifies an ERS model and SRS model using simulated data from ERS
+% Simulation and SRS Simulation, respectively. Can identify these models
+% using both type of inputs (PRBS and "Physiological") and compare the
+% results. The identified ERS Model can be used directly in the FRCS but
+% the identified SRS will need to be inversed before using in the FRCS.
 
-%Since the physiologically based signal needs to be slightly different for
-%each model type, the desired displacement signals are generated for each
-%model type
+%When running the script, you need to provide the following input:
+% 1. Type of SRS Model Strucutre? LNL/Hammerstein/Wiener/IRF
+%       Select the SRS model structure. Default is Wiener
+% 2. Compare two models? (PRBS & Physioloigcal)
+%       Choose whether or not to identify and compare ERS and SRS models 
+%       identified from both PRBS and Physiological Inputs
+%if N,
+% 3. Type of Input? PRBS/Physiological
+%       Select which type of signal you want to use to identify the ERS and
+%       SRS models
 
 clc
 clear all
@@ -165,11 +173,11 @@ for num_signals = 1:length(PRBS_signal)
         %(Must be less than 1)
         Band = [0 0.01];
 
-        %Generate a nonperiodic PRBS of length 100 samples.
+        %Generate a nonperiodic PRBS of length time.
         u = idinput(time*1000+1,'prbs',Band,Range);
 
         %Create an iddata object from the generated signal. 
-        %For this example, specify the sample time as 1 second.
+        %For this example, specify the sample time as 0.001 second.
         u = iddata([],u,0.001);
 
         U = (u.InputData)';
@@ -591,9 +599,11 @@ for num_signals = 1:length(PRBS_signal)
         pred_SRS = [pred_SRS double(yp)];
 
         if compare_two_models == true && PRBS_signal(num_signals) == true
-            IRF1 = IRF_model;
+            SRS_all{1} = IRF_model;
         elseif compare_two_models == true && PRBS_signal(num_signals) == false
-            IRF2 = IRF_model;
+            SRS_all{2} = IRF_model;
+        else
+            SRS_all{1} = IRF_model;
         end
         
         Zcur_SRS = [Zcur_SRS Zcur];
@@ -819,7 +829,6 @@ elseif compare_two_models == true && Weiner_model == true
     plot(Weiner2{1,2})
     ax = gca;
     ax.FontSize = 15;
-    %xlim([lower_limit upper_limit])
     title('(b) Static Nonlinearities','Fontsize', 20)
     xlabel('Transformed Displacement Input (m)','Fontsize',18)
     ylabel('Paralyzed Displacement Output, Pos_P(t) (m)','Fontsize',18)
@@ -859,6 +868,9 @@ elseif compare_two_models == true && Linear_IRF_model == true
     legend('PRBS', 'Physiological','Fontsize',14)
     grid on
     hold off
+    
+    IRF1 = SRS_all{1};
+    IRF2 = SRS_all{2};
     
     figure(figNum)
     figNum = figNum+1;
@@ -1000,6 +1012,8 @@ else
     ylabel('X1', 'Fontsize',18)
     xlabel('Lags (s)','Fontsize',18)
     grid on
+    
+    IRF_model = SRS_all{1};
     
     figure(figNum)
     figNum = figNum+1;
