@@ -3,94 +3,118 @@
 %INSTRUcTIONS: Must Run FRCS_identify_models before running this script
 
 %Takes the SRS model identified in FRCS_identify_models and estimates the
-%inverse
+%inverse SRS
 
-%Identify the Inverse SRS Model:
-%   1. Simulate the response of the SRS you identify to a white input to generate a simulated output.
-%   2. Then identify a model between the simulated output, as an input, and the simulated input, to estimate the inverse model.
-%   3. By using the simulated signals you can avoid problems with noise.
+%Identifying the Inverse SRS Model:
+%   1. Simulate the response of the SRS you identified to a PRBS input to generate a simulated output.
+%   2. Then identify an inverse SRS model between the simulated output, as
+%   input, and the simulated PRBS input, as output.
+
+%When running the script, you need to provide the following input:
+% 1. Which SRS Model do you want to Inverse? PRBS/Phys
+%       Select which identified SRS model you want to Invers. Default is
+%       Physiological
+% 2. Inverse SRS Model Structure? LNL/Hammerstein/Wiener/IRF
+%       Select the Inverse SRS Model Structure. Default is Hammerstein
+% 3. Number of Validation Trials?
+%       Number of Validation trials to test the Inverse SRS
 
 %% User Input Prompts
 
-% if compare_two_models == true
-%     prompt1 = 'Which SRS Model do you want to Inverse? PRBS/Phys [Phys]: ';
-%     str1 = input(prompt1,'s');
-%     if ~strcmp(str1,'PRBS') & ~strcmp(str1,'Phys') & ~isempty(str1)
-%         disp('Invalid Input')
-%         return
-%     elseif isempty(str1)
-%         str1 = 'Phys';
-%     end
-%     
-%     if strcmp(str1,'PRBS')
-%         if strcmp(model_type,'IRF')
-%             model = SRS_models{1};
-%         else
-%             model = SRS_models(1);
-%         end
-%         disp(['Validating ' model_type ' Model Identified from PRBS Input'])
-%     elseif strcmp(str1,'Phys')
-%         if strcmp(model_type,'IRF')
-%             model = SRS_models{2};
-%         else
-%             model = SRS_models(2);
-%         end
-%         disp(['Validating ' model_type ' Model Identified from Physiological Input'])
-%     end
-% else
-%     if strcmp(model_type,'IRF')
-%         model = SRS_models{1};
-%     else
-%         model = SRS_models(1);
-%     end
-%     disp(['Validating ' model_type ' Model Identified from ' input_type ' Input'])
-% end
+if compare_two_models == true
+    prompt1 = 'Which SRS Model do you want to Inverse? PRBS/Phys [Phys]: ';
+    str1 = input(prompt1,'s');
+    if ~strcmp(str1,'PRBS') & ~strcmp(str1,'Phys') & ~isempty(str1)
+        disp('Invalid Input')
+        return
+    elseif isempty(str1)
+        str1 = 'Phys';
+    end
+    
+    if strcmp(str1,'PRBS')
+        if strcmp(model_type,'IRF')
+            SRS = SRS_all{1};
+        else
+            SRS = SRS_all(1);
+        end
+        disp(['Inversing ' model_type ' SRS Model Identified from PRBS Input'])
+    elseif strcmp(str1,'Phys')
+        if strcmp(model_type,'IRF')
+            SRS = SRS_all{2};
+        else
+            SRS = SRS_all(2);
+        end
+        disp(['Inversing ' model_type ' SRS Model Identified from Physiological Input'])
+    end
+    SRS_inverse_input_type = str1;
+else
+    if strcmp(model_type,'IRF')
+        SRS = SRS_all{1};
+    else
+        SRS = SRS_all(1);
+    end
+    disp(['Inversing ' model_type ' SRS Model Identified from ' input_type ' Input'])
+    SRS_inverse_input_type = input_type;
+end
 
+prompt2 = 'Inverse SRS Model Structure? LNL/Hammerstein (Hamm)/Wiener/IRF [Hamm]: ';
+str2 = input(prompt2,'s');
+if ~strcmp(str2,'LNL') & ~strcmp(str2,'Hamm') & ~strcmp(str2,'Wiener') & ~strcmp(str2,'IRF') & ~isempty(str2)
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 'Hamm';
+end
 
-%Model Structure of Inverse SRS
+prompt3 = 'Number of Validation Trials? 1-30 [1]: ';
+str3 = input(prompt3);
+if str3<1 | str3>30
+    disp('Invalid Input')
+    return
+elseif isempty(str3)
+    str3 = 1;
+end
+
+%Multilag?
+
+%Multimodel?
 
 tStart = tic;
 
 %% Set Initial Parameters
 
-time = 180;
 figNum = 100;
 Fs = 1000;
 
 %Simulated Input (PRBS) Parameters
 PRBS_stimulus_time = 480;
-variable_amplitude = true;
+variable_amplitude = true;      %Can either be constant or variable amplitude
 N = PRBS_stimulus_time/10;
 M = 10000;
-PRBS_amplitude = 20; %mm
+PRBS_amplitude = 20;            %PRBS Signal Amplitude (mm)
 
-%Select which Model to Use
-if compare_two_models == true && LNL_model == true
-    SRS_model = LNL2;
-elseif compare_two_models == true && Hammerstein_model == true
-    SRS_model = Hammerstein2;
-elseif compare_two_models == true && Weiner_model == true
-    SRS_model = Weiner2;
-elseif compare_two_models == true && Linear_IRF_model == true
-    SRS_model = IRF2;
-elseif compare_two_models == false && LNL_model == true
-    SRS_model = LNL;
-elseif compare_two_models == false && Weiner_model == true
-    SRS_model = Weiner;
-else
-    SRS_model = IRF_model;
-end
+%Number of Signals (Identification and Validation)
+num_signals = str3+1;
 
 %Inverse Model Structure
 SRS_inverse_LNL = false;
-SRS_inverse_Hamm = true;
+SRS_inverse_Hamm = false;
 SRS_inverse_Weiner = false;
 SRS_inverse_IRF = false;
 
+if strcmp(str2,'LNL')
+    SRS_inverse_LNL = true;
+elseif strcmp(str2,'Hamm')
+    SRS_inverse_Hamm = true;
+elseif strcmp(str2,'Wiener')
+    SRS_inverse_Weiner = true;
+elseif strcmp(str2,'IRF')
+    SRS_inverse_IRF = true;
+end
+
 %% Simulated Input (PRBS Input)
 
-simulated_input_PRBS = [];
-num_signals = 2;
+simulated_input = [];
 
 for signal = 1:num_signals
 
@@ -123,11 +147,11 @@ for signal = 1:num_signals
     %(Must be less than 1)
     Band = [0 0.01];
 
-    %Generate a nonperiodic PRBS of length 100 samples.
+    %Generate a nonperiodic PRBS of length time.
     u = idinput(time*1000+1,'prbs',Band,Range);
 
     %Create an iddata object from the generated signal. 
-    %For this example, specify the sample time as 1 second.
+    %For this example, specify the sample time as 0.001 second.
     u = iddata([],u,0.001);
 
     U = (u.InputData)';
@@ -138,15 +162,9 @@ for signal = 1:num_signals
 
     input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
-    simulated_input_PRBS(:,signal) = stim_amplitude;
+    simulated_input(:,signal) = stim_amplitude;
 
 end
-
-%Plot one Input Realization
-figure(figNum)
-figNum = figNum+1;
-plot(t_total,simulated_input_PRBS(:,1))
-title('Simulated Input (PRBS)')
     
 %% Run the input throught the simulation model (Just to get an output)
 % stimulus_simulink = [t_total' simulated_input];
@@ -163,23 +181,22 @@ title('Simulated Input (PRBS)')
 
 %% Simulate the reponse of the SRS model to the Input Realizations
 
-simulated_input = simulated_input_PRBS;
-
+%Simulated Outputs of the SRS Model
 simulated_output = [];
 simulated_outputs = [];
 
+%Runs through all input realizations
 for signal = 1:num_signals
 
-    simulated_output = nlsim(SRS_model,simulated_input(:,signal));
-    set(simulated_output, 'domainIncr',0.001)
+    simulated_output = nlsim(SRS,simulated_input(:,signal));
+    set(simulated_output, 'domainIncr',0.001);
     
     simulated_output = max(simulated_output,0);
-
     simulated_outputs(:,signal) = simulated_output.dataSet;
 
 end
 
-%% Identify a model between simulated output (as input) and simulated input (as output)
+%% Identify a model between a simulated output (as input) and a simulated input (as output)
 
 %Input/Output for Inverse SRS Identification
 Zcur_simulated = [simulated_outputs(1000:end,1) simulated_input(1000:end,1)];
@@ -205,22 +222,17 @@ ylabel('Displacement (m)','Fontsize',18)
 xlabel('Time (s)','Fontsize',18)
 grid on
 
-%Outputs to other realizations 
-test_output = [];
+%Outputs to other input realizations 
+validation_output = [];
 
 for signal = 2:num_signals
 
-    Test_Output = nldat(simulated_outputs(1000:end,signal));
-    set(Test_Output,'domainIncr',0.001);
+    Validation_Output = nldat(simulated_outputs(1000:end,signal));
+    set(Validation_Output,'domainIncr',0.001);
     
-    test_output(:,signal-1) = Test_Output.dataSet;
+    validation_output(:,signal-1) = Validation_Output.dataSet;
 
 end
-
-figure(figNum)
-figNum = figNum+1;
-plot(test_output(:,1))
-title('test output 1 (as input)')
 
 %% Identify the Inverse SRS
 
@@ -247,7 +259,7 @@ elseif SRS_inverse_Hamm == true
     SRS_inverse = nlbl;  %Hammerstein
     set(SRS_inverse,'idMethod','hk','displayFlag',true,'threshNSE',.001);
     I2 = irf;
-    set(I2,'nLags',nLags, 'nSides', 2); % Set number of lags and Sides in IRF
+    set(I2,'nLags',nLags, 'nSides', 2,'domainIncr',0.001); % Set number of lags and Sides in IRF
     SRS_inverse{1,2} = I2;
     
     SRS_inverse = nlident(SRS_inverse,Zcur_simulated);
@@ -257,7 +269,7 @@ elseif SRS_inverse_Weiner == true
     SRS_inverse = lnbl; %Wiener
     set(SRS_inverse,'idMethod','hk');
     I1 = irf;
-    set(I1,'nLags',nLags,'nSides',2); % Set Number of lags and Sides in IRF
+    set(I1,'nLags',nLags,'nSides',2,'domainIncr',0.001); % Set Number of lags and Sides in IRF
     SRS_inverse{1,1} = I1;
 
     SRS_inverse = nlident(SRS_inverse,Zcur_simulated);
@@ -265,7 +277,7 @@ elseif SRS_inverse_Weiner == true
 elseif SRS_inverse_IRF == true
 
     %Two-Sided IRF
-    SRS_inverse = irf(Zcur_simulated,'nLags',nLags,'nSides',2);
+    SRS_inverse = irf(Zcur_simulated,'nLags',nLags,'nSides',2,'domainIncr',0.001);
     
 end
 
@@ -287,14 +299,14 @@ if SRS_inverse_LNL == true
     Zcur_simulated_double = Zcur_simulated.dataSet;
     Zcur_input = Zcur_simulated_double(:,1);
     plot(t_total(1,1000:end),Zcur_input)
-    title('Simulated Displacement (Used as Input)')
+    title('Simulated Paralyzed Displacement, Pos_P(t) (Used as Input)')
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Displacement (m)','Fontsize', 10)
 
     subplot(3,3,3)
     Zcur_output = Zcur_simulated_double(:,2);
     plot(t_total(1,1000:end),Zcur_output)
-    title('Simulated Amplitude Modulation (Used as Output)')
+    title('Simulated Amplitude Modulation, A(t) (Used as Output)')
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Amplitude (V)','Fontsize', 10)
 
@@ -313,7 +325,8 @@ if SRS_inverse_LNL == true
     plot(t_total(1,1000:end), Zcur_output)
     plot(t_total(1,1000:end),pred);
     hold off
-    title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 10)
+    V = vaf(Zcur_output(15000:end-14999,:),pred(15000:end-14999,:));
+    title(['Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 10)
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Amplitude (V)', 'Fontsize', 10)
     legend('Observed', 'Predicted', 'Fontsize', 6)
@@ -425,16 +438,16 @@ elseif SRS_inverse_Weiner == true
 
     subplot(3,2,3)
     plot(SRS_inverse{1,1})
-    title('(c) Static Nonlinear Element','Fontsize', 10)
-    xlabel('Paralyzed Displacement Input, Pos_P(t) (m)', 'Fontsize', 10)
-    ylabel('Transformed Displacement Output (m)','Fontsize', 10)
+    title('(c) Linear Element','Fontsize', 10)
+    xlabel('Lags (s)', 'Fontsize', 10)
+    ylabel('X1','Fontsize', 10)
     grid on
 
     subplot(3,2,4)
     plot(SRS_inverse{1,2})
-    title('(d) Linear Element','Fontsize', 10)
-    xlabel('Lags (s)', 'Fontsize', 10)
-    ylabel('X1','Fontsize', 10)
+    title('(d) Static Nonlinear Element','Fontsize', 10)
+    xlabel('Transformed Modulation Input', 'Fontsize', 10)
+    ylabel('Amplitude Modulation Output (V)','Fontsize', 10)
     grid on
 
     subplot(3,2,5)
@@ -463,18 +476,18 @@ elseif SRS_inverse_Weiner == true
     plot(SRS_inverse{1,1})
     ax = gca;
     ax.FontSize = 14;
-    title('(a) Static Nonlinear Element','Fontsize', 18)
-    xlabel('Paralyzed Displacement Input, Pos_P(t) (m)', 'Fontsize', 18)
-    ylabel('Transformed Displacement Output (m)','Fontsize', 18)
+    title('(a) Linear Element','Fontsize', 18)
+    xlabel('Lags (s)', 'Fontsize', 18)
+    ylabel('X1','Fontsize', 18)
     grid on
 
     subplot(1,2,2)
     plot(SRS_inverse{1,2})
     ax = gca;
     ax.FontSize = 14;
-    title('(b) Linear Element','Fontsize', 18)
-    xlabel('Lags (s)', 'Fontsize', 18)
-    ylabel('X1','Fontsize', 18)
+    title('(b) Static Nonlinear Element','Fontsize', 18)
+    xlabel('Transformed Modulation Input', 'Fontsize', 18)
+    ylabel('Amplitude Modulation Output (V)','Fontsize', 18)
     grid on
 
 elseif SRS_inverse_IRF == true
@@ -486,7 +499,7 @@ elseif SRS_inverse_IRF == true
     Zcur_simulated_double = Zcur_simulated.dataSet;
     Zcur_input = Zcur_simulated_double(:,1);
     plot(t_total(1,1:end-999),Zcur_input)
-    title('Simulated Displacement (Used as Input)','Fontsize', 10)
+    title('(a) Simulated Paralyzed Displacement, Pos_P(t) (Used as Input)','Fontsize', 10)
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Displacement (m)','Fontsize', 10)
     grid on
@@ -494,14 +507,14 @@ elseif SRS_inverse_IRF == true
     subplot(3,2,2)
     Zcur_output = Zcur_simulated_double(:,2);
     plot(t_total(1,1:end-999),Zcur_output)
-    title('Simulated Amplitude Modulation (Used as Output)','Fontsize', 10)
+    title('(b) Simulated Amplitude Modulation, A(t) (Used as Output)','Fontsize', 10)
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Amplitude (V)','Fontsize', 10)
     grid on
 
     subplot(3,2,[3 4])
     plot(SRS_inverse)
-    title('Two-Sided Linear IRF','Fontsize', 10)
+    title('(c) Two-Sided Linear IRF','Fontsize', 10)
     xlabel('Lags (s)', 'Fontsize', 10)
     ylabel('X1','Fontsize', 10)
     grid on
@@ -513,7 +526,7 @@ elseif SRS_inverse_IRF == true
     plot(t_total(1,1:end-999), Zcur_output)
     hold off
     V = vaf(Zcur_output(15000:end-14999,:),pred(15000:end-14999,:));
-    title(['Superimposed, VAF = ' num2str(V) '%'], 'Fontsize', 10)
+    title(['(d) Superimposed, VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 10)
     xlabel('Time (s)', 'Fontsize', 10)
     ylabel('Amplitude (V)', 'Fontsize', 10)
     legend('Predicted', 'Observed', 'Fontsize', 8)
@@ -521,7 +534,7 @@ elseif SRS_inverse_IRF == true
 
     subplot(3,2,6)
     plot(R)
-    title('Residuals','Fontsize', 10)
+    title('(e) Residuals','Fontsize', 10)
     xlabel('Time (s)','Fontsize', 10)
     ylabel('Amplitude (V)','Fontsize', 10)
     grid on
@@ -529,6 +542,7 @@ elseif SRS_inverse_IRF == true
 end
 
 %% Analysis of Inverse SRS Identification Residuals
+
 figure(figNum)
 figNum = figNum+1;
 sgtitle('Analysis of Inverse SRS Identification Residuals','Fontsize',14)
@@ -571,32 +585,20 @@ inverse_SRS_validation_accuracy = [];
 
 for signal = 1:num_signals-1
     
-    control_system_test_output = nlsim(SRS_inverse,test_output(:,signal));
-
-    figure(10000)
-    %figNum = figNum+1;
-    
-    subplot(2,1,1)
-    plot(t_total(1,1:end-2998),test_output(1000:end-1000,signal));
-    title('Control System Stimulus Test Input','Fontsize', 16)
-    xlabel('Time (s)','Fontsize',16)
-    ylabel('Displacement (m)', 'Fontsize', 16)
-    
-    subplot(2,1,2)
+    control_system_test_output = nlsim(SRS_inverse,validation_output(:,signal));
+    set(control_system_test_output,'domainIncr',0.001);
     control_system_test_output_double(:,signal) = control_system_test_output.dataSet;
-    plot(t_total(1,1:end-2998),control_system_test_output_double(1000:end-1000,signal));
-    title(['Control System Stimulus Test Output ' num2str(signal)], 'Fontsize', 16)
-    xlabel('Time (s)','Fontsize',16)
-    ylabel('Amplitude (V)', 'Fontsize', 16)
-    grid on
     
     inverse_SRS_validation_accuracy(signal,:) = vaf(simulated_input(1999:end-1000,signal+1),control_system_test_output_double(1000:end-1000,signal));
 
 end
 
 % Mean and Standard Deviation of Inverse SRS Validation Accuracy
-validation_accuracy_mean = mean(inverse_SRS_validation_accuracy)
-validation_accuracy_std = std(inverse_SRS_validation_accuracy)
+validation_accuracy_mean = mean(inverse_SRS_validation_accuracy);
+validation_accuracy_std = std(inverse_SRS_validation_accuracy);
+
+disp(['Validation Accuracy Mean: ' num2str(round(validation_accuracy_mean,1)) '%'])
+disp(['Validation Accuracy Std: ' num2str(round(validation_accuracy_std,1)) '%'])
 
 %Plot one validation example
 figure(figNum)
