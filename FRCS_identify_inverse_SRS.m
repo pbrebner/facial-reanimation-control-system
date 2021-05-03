@@ -1,6 +1,6 @@
 %% Facial Reanimation Control system (FRCS): Identify the Inverse SRS
 
-%INSTRUcTIONS: Must Run FRCS_identify_models before running this script
+%INSTRUCTIONS: Must Run FRCS_identify_models before running this script
 
 %Takes the SRS model identified in FRCS_identify_models and estimates the
 %inverse SRS
@@ -57,7 +57,7 @@ else
     SRS_inverse_input_type = input_type;
 end
 
-prompt2 = 'Inverse SRS Model Structure? LNL/Hammerstein (Hamm)/Wiener/IRF [Hamm]: ';
+prompt2 = 'Inverse SRS Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Hamm]: ';
 str2 = input(prompt2,'s');
 if ~strcmp(str2,'LNL') & ~strcmp(str2,'Hamm') & ~strcmp(str2,'Wiener') & ~strcmp(str2,'IRF') & ~isempty(str2)
     disp('Invalid Input')
@@ -65,6 +65,7 @@ if ~strcmp(str2,'LNL') & ~strcmp(str2,'Hamm') & ~strcmp(str2,'Wiener') & ~strcmp
 elseif isempty(str2)
     str2 = 'Hamm';
 end
+SRS_inverse_model_structure = str2;
 
 prompt3 = 'Number of Validation Trials? 1-30 [1]: ';
 str3 = input(prompt3);
@@ -74,10 +75,6 @@ if str3<1 | str3>30
 elseif isempty(str3)
     str3 = 1;
 end
-
-%Multilag?
-
-%Multimodel?
 
 tStart = tic;
 
@@ -165,19 +162,6 @@ for signal = 1:num_signals
     simulated_input(:,signal) = stim_amplitude;
 
 end
-    
-%% Run the input throught the simulation model (Just to get an output)
-% stimulus_simulink = [t_total' simulated_input];
-% 
-% set_param('Paralyzed_Model_Simulink/Output Noise','Cov','set_output_noise_power')
-% % output_noise_power = [output_noise_power set_output_noise_power];
-% 
-% %Run Simulink;
-% out = sim('Paralyzed_Model_Simulink',time);
-% 
-% %Get Output from Simulink
-% output_displacement_simulink = out.Paralyzed_Model_Displacement;
-% t_simulink = out.tout;
 
 %% Simulate the reponse of the SRS model to the Input Realizations
 
