@@ -9,6 +9,9 @@
 %   2. Then identify an inverse SRS model between the simulated output, as
 %   input, and the simulated PRBS input, as output.
 
+%When running the script, you need to provide the following input:
+% 1. 
+
 %% User Input Prompts
 
 if compare_two_models == true
@@ -47,23 +50,55 @@ else
     SRS_inverse_input_type = input_type;
 end
 
-prompt2 = 'Inverse SRS Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Hamm]: ';
+prompt2 = 'Type of Test? Lags/Models [Lags]: ';
 str2 = input(prompt2,'s');
-if ~strcmp(str2,'LNL') & ~strcmp(str2,'Hamm') & ~strcmp(str2,'Wiener') & ~strcmp(str2,'IRF') & ~isempty(str2)
+if ~strcmp(str2,'Lags') & ~strcmp(str2,'Models') & ~isempty(str2)
     disp('Invalid Input')
     return
 elseif isempty(str2)
-    str2 = 'Hamm';
+    str2 = 'Lags';
 end
-SRS_inverse_model_structure = str2;
 
-prompt3 = 'Number of Validation Trials? 1-30 [1]: ';
-str3 = input(prompt3);
-if str3<1 | str3>30
+if strcmp(str2,'Lags')
+    
+    prompt3 = 'Inverse SRS Model Structure? LNL/Hammerstein(Hamm)/Wiener/IRF [Hamm]: ';
+    str3 = input(prompt3,'s');
+    if ~strcmp(str3,'LNL') & ~strcmp(str3,'Hamm') & ~strcmp(str3,'Wiener') & ~strcmp(str3,'IRF') & ~isempty(str3)
+        disp('Invalid Input')
+        return
+    elseif isempty(str3)
+        str3 = 'Hamm';
+    end  
+    
+elseif strcmp(str2,'Models')
+    
+    prompt4 = 'Number of Lags in Inverse SRS IRF(s)? 1-500 [400]: ';
+    str4 = input(prompt4);
+    if str4<1 | str4>500
+        disp('Invalid Input')
+        return
+    elseif isempty(str4)
+        str4 = 400;
+    end
+    
+    prompt5 = 'Number of Identification Trials? 1-20 [1]: ';
+    str5 = input(prompt5);
+    if str5<1 | str5>20
+        disp('Invalid Input')
+        return
+    elseif isempty(str5)
+        str5 = 1;
+    end
+    
+end
+
+prompt6 = 'Number of Validation Trials? 1-100 [1]: ';
+str6 = input(prompt6);
+if str6<1 | str6>100
     disp('Invalid Input')
     return
-elseif isempty(str3)
-    str3 = 1;
+elseif isempty(str6)
+    str6 = 1;
 end
 
 tStart = tic;
@@ -80,30 +115,51 @@ N = PRBS_stimulus_time/10;
 M = 10000;
 PRBS_amplitude = 20;            %PRBS Signal Amplitude (mm)
 
-%Number of Signals (Identification and Validation)
-num_signals = str3+1;
-
 %Inverse Model Structure
 SRS_inverse_LNL = false;
 SRS_inverse_Hamm = false;
 SRS_inverse_Weiner = false;
 SRS_inverse_IRF = false;
 
-if strcmp(str2,'LNL')
-    SRS_inverse_LNL = true;
-elseif strcmp(str2,'Hamm')
-    SRS_inverse_Hamm = true;
-elseif strcmp(str2,'Wiener')
-    SRS_inverse_Weiner = true;
-elseif strcmp(str2,'IRF')
-    SRS_inverse_IRF = true;
-end
-
-num_signals_ident = 2;
-num_signals_val = 100;
-
-multi_lag = true;
+%Type of Test
+multi_lag = false;
 multi_model = false;
+
+if strcmp(str2,'Lags')
+    
+    multi_lag = true;
+
+    if strcmp(str3,'LNL')
+        SRS_inverse_LNL = true;
+        nLags_start = 400; %Restricted to a max of 400 for performance issues
+    elseif strcmp(str3,'Hamm')
+        SRS_inverse_Hamm = true;
+        nLags_start = 800;
+    elseif strcmp(str3,'Wiener')
+        SRS_inverse_Weiner = true;
+        nLags_start = 800;
+    elseif strcmp(str3,'IRF')
+        SRS_inverse_IRF = true;
+        nLags_start = 800;
+    end
+    
+    %How much to decrease nlags each iteration (stops after nlags < 50)
+    nLags_increment = 100;
+    
+    %Number of Signals (Validation plus One Identification)
+    num_signals = str6+1;
+    
+elseif strcmp(str2,'Models')
+    
+    multi_model = true;
+    
+    nLags = str4;
+
+    %Number of Signals (Identification and Validation)
+    num_signals_ident = str5;
+    num_signals_val = str6;
+    
+end
 
 %% Multi-Lag or Multi-Model
 
@@ -219,8 +275,8 @@ if multi_lag == true
     
     %% Identify the Inverse SRS
     
-    nLags = 400;
-    nLags_plot = [];
+    nLags = nLags_start;
+    nLags_all = [];
 
     accuracy_identification = [];
     accuracy_validation = [];
@@ -290,10 +346,12 @@ if multi_lag == true
 
         end
         
-        accuracy_validation = [accuracy_validation inverse_SRS_validation_accuracy(1,:)];
+        accuracy_validation_mean = mean(inverse_SRS_validation_accuracy,1);
+        %accuracy_validation = [accuracy_validation inverse_SRS_validation_accuracy(1,:)];
+        accuracy_validation = [accuracy_validation accuracy_validation_mean];
 
-        nLags_plot = [nLags_plot nLags];
-        nLags = nLags - 100;
+        nLags_all = [nLags_all nLags];
+        nLags = nLags - nLags_increment;
         
     end
     
@@ -301,13 +359,13 @@ if multi_lag == true
     figure(figNum)
     figNum = figNum+1;
     hold on
-    plot(nLags_plot,accuracy_identification,'Linewidth',2)
-    plot(nLags_plot,accuracy_validation,'Linewidth',2)
+    plot(nLags_all,accuracy_identification,'Linewidth',2)
+    plot(nLags_all,accuracy_validation,'Linewidth',2)
     hold off
     title('Accuracy vs NLags','Fontsize',20)
     xlabel('NLags', 'Fontsize',18)
     ylabel('Accuracy (%VAF)','Fontsize',18)
-    legend('Identification','Validation','Fontsize',16)
+    legend('Identification','Validation (Mean)','Fontsize',16)
     grid on
     
 elseif multi_model == true
@@ -317,9 +375,6 @@ elseif multi_model == true
     simulated_outputs_ident = [];
 
     simulated_input_PRBS_ident = [];
-
-    %Number of Lags used by the models
-    nLags = 400;
 
     accuracy_identification_LNL = [];
     accuracy_validation_LNL = [];
@@ -376,10 +431,8 @@ elseif multi_model == true
         stim_frequency = 50;
         stim_amplitude = desired_displacement*170;
 
-        %input_stimulus = max(stim_amplitude.*square(2*pi*stim_frequency.*t_total),0);
         input_stimulus = max(stim_amplitude.*sin(2*pi*stim_frequency.*t_total),0);
 
-        %simulated_input_PRBS(:,signal) = input_stimulus';
         simulated_input_PRBS_ident = stim_amplitude;
         simulated_input_ident = simulated_input_PRBS_ident';
 
@@ -406,7 +459,7 @@ elseif multi_model == true
 
         SRS_inverse_LNL = nlident(SRS_inverse_LNL,Zcur_simulated_ident);
 
-        figure(1)
+        figure(100)
         [R, V, yp] = nlid_resid(SRS_inverse_LNL,Zcur_simulated_ident);
 
         accuracy_identification_LNL = [accuracy_identification_LNL V];
@@ -420,7 +473,7 @@ elseif multi_model == true
 
         SRS_inverse_Hamm = nlident(SRS_inverse_Hamm,Zcur_simulated_ident);
 
-        figure(2)
+        figure(101)
         [R, V, yp] = nlid_resid(SRS_inverse_Hamm,Zcur_simulated_ident);
 
         accuracy_identification_Hamm = [accuracy_identification_Hamm V];
@@ -434,7 +487,7 @@ elseif multi_model == true
 
         SRS_inverse_Weiner = nlident(SRS_inverse_Weiner,Zcur_simulated_ident);
 
-        figure(3)
+        figure(102)
         [R, V, yp] = nlid_resid(SRS_inverse_Weiner,Zcur_simulated_ident);
 
         accuracy_identification_Weiner = [accuracy_identification_Weiner V];
@@ -442,7 +495,7 @@ elseif multi_model == true
         %Two-Sided IRF
         SRS_inverse_IRF = irf(Zcur_simulated_ident,'nLags',nLags,'nSides',2);
 
-        figure(4)
+        figure(103)
         [R, V, yp] = nlid_resid(SRS_inverse_IRF,Zcur_simulated_ident);
 
         accuracy_identification_IRF = [accuracy_identification_IRF V];
@@ -514,7 +567,7 @@ elseif multi_model == true
         simulated_input_PRBS_val = stim_amplitude;
         simulated_input_val = simulated_input_PRBS_val';
 
-        simulated_output_val = nlsim(SRS_model,simulated_input_val);
+        simulated_output_val = nlsim(SRS,simulated_input_val);
         set(simulated_output_val, 'domainIncr',0.001);
 
         simulated_output_val = max(simulated_output_val,0);
@@ -582,7 +635,8 @@ elseif multi_model == true
     
     disp(['Identification Accuracy Mean for IRF Inverse SRS: ' num2str(round(accuracy_identification_IRF_mean,1)) '%'])
     disp(['Identification Accuracy Std for IRF Inverse SRS: ' num2str(round(accuracy_identification_IRF_std,1)) '%'])
-
+    fprintf('\n')
+    
     %Validation Accuracy
     accuracy_validation_LNL_mean = mean(accuracy_validation_LNL);
     accuracy_validation_LNL_std = std(accuracy_validation_LNL);
@@ -610,5 +664,4 @@ elseif multi_model == true
     
 end
 
-
-
+tEnd = toc(tStart)/60
