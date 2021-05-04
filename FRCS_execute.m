@@ -18,9 +18,12 @@
 %       This determines which type of input is used for the FRCS. Default
 %       is Physiological as this is closer to a real world signal.
 % 2. Number of Validation Trials?
-%
+%       Number of Input EMG Realizations used to test the FRCS(s) (calculates
+%       the mean and std VAF)
 % 3. Number of FRCS Versions?
-%
+%       Number of Versions of the FRCS. Default is 1 (The ERS and Inverse 
+%       SRS already identified). Having more that 1 requires identifying 
+%       additional inverse SRS models.
 
 %% User Input Prompts
 
