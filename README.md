@@ -29,3 +29,7 @@ Matlab/Simulink Files:
 The Facial Reanimation Control System (FRCS) combines the ERS with the inverse of the SRS to model the healthy side displacement to a stimulus amplitude modulation output required to duplicate the healthy movement on the paralyzed side of the face
 
 Matlab/Simulink Files:
+1. FRCS_identify_models: Identifies an ERS and SRS Model using simulated data
+2. FRCS_identify_inverse_SRS: takes the SRS model and estimates the inverse SRS model
+3. FRCS_identify_inverse_SRS_test: Evaluates the inverse SRS performance depending on the model structure and number of lags of inverse SRS IRF(s)
+4. FRCS_execute: Combines the ERS and inverse SRS to create the FRCS. An EMG input is passed into the FRCS and the outputs are evaluated.
