@@ -9,13 +9,13 @@
 %When running the script, you need to provide the following input:
 % 1. Type of SRS Model Strucutre? LNL/Hammerstein/Wiener/IRF
 %       Select the SRS model structure. Default is Wiener
-% 2. Compare two models? (PRBS & Physioloigcal)
+% 2. Compare two models? (PRBS & Physioloigcal) Y/N
 %       Choose whether or not to identify and compare ERS and SRS models 
-%       identified from both PRBS and Physiological Inputs
+%       identified from both PRBS and Physiological Inputs. Deafult is Y.
 %if N,
 % 3. Type of Input? PRBS/Physiological
 %       Select which type of signal you want to use to identify the ERS and
-%       SRS models
+%       SRS models. Default is PRBS.
 
 clc
 clear all
