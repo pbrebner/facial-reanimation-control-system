@@ -1,8 +1,16 @@
-%% Facial Reanimation Control system (FRCS): 
+%% FRCS Identify Inverse SRS: Test to Evaluate Number of Lags and Model Structure
 
 %INSTRUCTIONS: Must Run FRCS_identify_models before running this script
 
-%
+%This script is used to evaluate the effect that the number of lags in the
+%inverse SRS IRF(s) and model structure of the inverse SRS have on
+%accuracy. This is done in two seperate tests: Lags and Models. The Lags
+%test will identify an inverse SRS with a specified model structure for
+%various number of lags in the IRF(s). The accuracies of these models are
+%then compared. The Models test identifies inverse SRS's of all four model
+%structures, with specified number of lags. The Mean and Std of each model
+%structure is calculated and compared. Based on the results the optimum 
+%number of Lags and Model Structure can be choosen.
 
 %Identifying the Inverse SRS Model:
 %   1. Simulate the response of the SRS you identified to a PRBS input to generate a simulated output.
@@ -10,7 +18,39 @@
 %   input, and the simulated PRBS input, as output.
 
 %When running the script, you need to provide the following input:
-% 1. 
+% 1. Which SRS Model do you want to Inverse? PRBS/Phys
+%       Select which identified SRS model you want to Inverse. Default is
+%       Physiological or if only one model was identified it'll skip this
+%       question and default to the model identified.
+% 2. Type of Test? Lags/Models
+%       Select which test you want to run.
+%
+%       Lags: Will run through various number of lags for a specified
+%       inverse SRS model structure and plot results. Can specify the
+%       number of validation trials.
+%
+%       Models: Will identify and test all four inverse SRS model
+%       structures at a specified number of lags. Can specify the number of
+%       identification and validation trials.
+%
+%if Lags,
+% 3. Inverse SRS Model Structure? LNL/Hammerstein/Wiener/IRF
+%       Select the Inverse SRS Model Structure used for this test. Default 
+%       is Hammerstein.
+% 4. Number of Validation Trials?
+%       Number of Validation Trials to calculate Accuracy Mean.
+%       Default is 1 (increase if you want an average accuracy).
+%if Models,
+% 3. Number of Lags in Inverse SRS IRF(s)?
+%       This determines the number of lags in the inverse SRS IRF(s). This
+%       is for all four inverse SRS model structures identified with this
+%       test. Default is 400.
+% 4. Number of Identification Trials?
+%       Number of Identifcation Trials to calculate identifcation accuraccy
+%       Mean and Std. Default is 1.
+% 5.Number of Validation Trials?
+%       Number of Validation Trials to calculate Accuracy Mean and Std.
+%       Default is 1 (increase if you want an average accuracy).
 
 %% User Input Prompts
 
@@ -89,7 +129,6 @@ elseif strcmp(str2,'Models')
     elseif isempty(str5)
         str5 = 1;
     end
-    
 end
 
 prompt6 = 'Number of Validation Trials? 1-100 [1]: ';
