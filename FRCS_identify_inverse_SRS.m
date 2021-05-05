@@ -1,4 +1,4 @@
-%% Facial Reanimation Control system (FRCS): Identify the Inverse SRS
+%% FRCS: Identify the Inverse SRS
 
 %INSTRUCTIONS: Must Run FRCS_identify_models before running this script
 
@@ -12,8 +12,9 @@
 
 %When running the script, you need to provide the following input:
 % 1. Which SRS Model do you want to Inverse? PRBS/Phys
-%       Select which identified SRS model you want to Invers. Default is
-%       Physiological
+%       Select which identified SRS model you want to Inverse. Default is
+%       Physiological or if only one model was identified it'll skip this
+%       question and default to the model identified
 % 2. Inverse SRS Model Structure? LNL/Hammerstein/Wiener/IRF
 %       Select the Inverse SRS Model Structure. Default is Hammerstein
 % 3. Number of Validation Trials?
