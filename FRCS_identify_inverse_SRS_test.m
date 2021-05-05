@@ -44,7 +44,9 @@
 % 3. Number of Lags in Inverse SRS IRF(s)?
 %       This determines the number of lags in the inverse SRS IRF(s). This
 %       is for all four inverse SRS model structures identified with this
-%       test. Default is 400.
+%       test. Default is 400. The LNL structure is limited to a max of 400
+%       nlags (due to performance issues) while the Hammerstein/Wiener/IRF
+%       models structures can go up to 800 nlags.
 % 4. Number of Identification Trials?
 %       Number of Identifcation Trials to calculate identifcation accuraccy
 %       Mean and Std. Default is 1.
@@ -112,9 +114,9 @@ if strcmp(str2,'Lags')
     
 elseif strcmp(str2,'Models')
     
-    prompt4 = 'Number of Lags in Inverse SRS IRF(s)? 1-500 [400]: ';
+    prompt4 = 'Number of Lags in Inverse SRS IRF(s)? 1-800 [400]: ';
     str4 = input(prompt4);
-    if str4<1 | str4>500
+    if str4<1 | str4>800
         disp('Invalid Input')
         return
     elseif isempty(str4)
@@ -193,6 +195,7 @@ elseif strcmp(str2,'Models')
     multi_model = true;
     
     nLags = str4;
+    nLags_LNL = min(400,nLags);
 
     %Number of Signals (Identification and Validation)
     num_signals_ident = str5;
@@ -493,7 +496,7 @@ elseif multi_model == true
         set(I1,'nLags',1,'nSides',2,'domainIncr',0.001);
         P = polynom;
         I3 = irf;
-        set(I3,'nLags',nLags,'nSides', 2,'domainIncr',0.001);
+        set(I3,'nLags',nLags_LNL,'nSides', 2,'domainIncr',0.001);
         SRS_inverse_LNL.elements = {I1 P I3};
 
         SRS_inverse_LNL = nlident(SRS_inverse_LNL,Zcur_simulated_ident);
