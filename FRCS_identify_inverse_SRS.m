@@ -18,7 +18,7 @@
 % 2. Inverse SRS Model Structure? LNL/Hammerstein/Wiener/IRF
 %       Select the Inverse SRS Model Structure. Default is Hammerstein
 % 3. Number of Validation Trials?
-%       Number of Validation trials to test the Inverse SRS
+%       Number of Validation trials to test the Inverse SRS. Default is 1.
 
 %% User Input Prompts
 
