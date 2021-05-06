@@ -1,5 +1,9 @@
-slprj
+slprj/
+
 *.asv
 *.slx.original
 *.slxc
-archive
+
+archive/
+demos/
+previous-analysis/
