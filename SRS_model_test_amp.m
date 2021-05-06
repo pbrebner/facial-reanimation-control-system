@@ -153,11 +153,11 @@ for record_length = 1:num_record_lengths
         %(Must be less than 1)
         Band = [0 0.01];
 
-        %Generate a nonperiodic PRBS of length 100 samples.
+        %Generate a nonperiodic PRBS of length time.
         u = idinput(time*1000+1,'prbs',Band,Range);
 
         %Create an iddata object from the generated signal. 
-        %For this example, specify the sample time as 1 second.
+        %For this example, specify the sample time as 0.001 second.
         u = iddata([],u,0.001);
 
         U = (u.InputData)';
