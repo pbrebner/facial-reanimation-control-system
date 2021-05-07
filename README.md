@@ -1,7 +1,7 @@
 # Facial Reanimation Control System
-Repository for facial reanimation control system project 
+Repository for facial reanimation control system project, a thesis project for Masters of Biological and Biomedical Engineering at McGill University.
 
-Thesis project for Masters of Biological and Biomedical Engineering at McGill University
+In order to run the project code, you need to download all files of the REKLAB NLID repository from: https://github.com/reklab/reklab_public and add it to your MATLAB path.
 
 The project is split into three sections:
 1. Identifying and evaluating the EMG Response System (ERS)
