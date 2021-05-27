@@ -85,6 +85,7 @@ chance_of_zero = false;
 num_trials = str2;
 validation_accuracy = [];
 validation_accuracy_all = [];
+Zcur_all_val = [];
 
 %for validation we test with PRBS signal first, and then with Physiological signal
 PRBS_movement = [true false];
@@ -260,6 +261,8 @@ for signal = 1:length(PRBS_movement)
         
         %validation accuracy for all trials of current signal type
         validation_accuracy = [validation_accuracy V];
+        
+        Zcur_all_val = [Zcur_all_val Zcur]; 
 
     end
     
