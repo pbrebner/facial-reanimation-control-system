@@ -303,8 +303,13 @@ for trial = 1:num_val_trials
     predicted_paralyzed_displacement = out.SRS_Simulation_Displacement;
     t_simulink = out.tout;
     
-    Variance = vaf(predicted_healthy_displacement,predicted_paralyzed_displacement);
+    Variance = vaf(predicted_healthy_displacement,predicted_paralyzed_displacement); 
     FRCS_validation_accuracy(trial,1) = Variance;
+    
+    %To save the displacement data
+    FRCS_desired_displacement_all(:,trial) = desired_displacement;
+    FRCS_predicted_healthy_displacement_all(:,trial) = predicted_healthy_displacement;
+    FRCS_predicted_paralyzed_displacement_all(:,trial) = predicted_paralyzed_displacement;
 
     if trial == 1
         %plot the stimulus that is created based on the amplitude modulation
@@ -841,6 +846,11 @@ if num_FRCS_models > 1
 
             Variance = vaf(predicted_healthy_displacement,predicted_paralyzed_displacement);
             FRCS_validation_accuracy(trial,FRCS_model) = Variance;
+            
+            %To save displacement data
+            FRCS_desired_displacement_all(:,trial,FRCS_model) = desired_displacement;
+            FRCS_predicted_healthy_displacement_all(:,trial,FRCS_model) = predicted_healthy_displacement;
+            FRCS_predicted_paralyzed_displacement_all(:,trial,FRCS_model) = predicted_paralyzed_displacement;
             
         end
         
