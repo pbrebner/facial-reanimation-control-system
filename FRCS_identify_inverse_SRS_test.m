@@ -426,6 +426,12 @@ elseif multi_model == true
     accuracy_validation_Weiner = [];
     accuracy_identification_IRF = [];
     accuracy_validation_IRF = [];
+    
+    Zcur_simulated_ident_all = [];
+    SRS_inverse_LNL_all = [];
+    SRS_inverse_Hamm_all = [];
+    SRS_inverse_Weiner_all = [];
+    SRS_inverse_IRF_all = [];
 
     iter_ident = 0;
 
@@ -542,6 +548,12 @@ elseif multi_model == true
 
         accuracy_identification_IRF = [accuracy_identification_IRF V];
 
+        Zcur_simulated_ident_all = [Zcur_simulated_ident_all Zcur_simulated_ident];
+        SRS_inverse_LNL_all = [SRS_inverse_LNL_all SRS_inverse_LNL];
+        SRS_inverse_Hamm_all = [SRS_inverse_Hamm_all SRS_inverse_Hamm];
+        SRS_inverse_Weiner_all = [SRS_inverse_Weiner_all SRS_inverse_Weiner];
+        SRS_inverse_IRF_all = [SRS_inverse_IRF_all SRS_inverse_IRF];
+        
         iter_ident = iter_ident+1
     end
     
@@ -647,7 +659,11 @@ elseif multi_model == true
         inverse_SRS_validation_accuracy = vaf(simulated_input_val(1999:end-1000,:),control_system_test_output_double(1000:end-1000,1));
 
         accuracy_validation_IRF = [accuracy_validation_IRF inverse_SRS_validation_accuracy];
-
+        
+        %Save Data
+        simulated_input_val_all(:,signal_val) = simulated_input_val;
+        test_output_val_all(:,signal_val) = test_output_val;
+        
         iter_val = iter_val+1
     end
     
