@@ -74,7 +74,8 @@ output_noise_power_all = [];
 %Initialize Models
 NHK_all = [];
 models_all = [];
-Zcur_all = [];
+Zcur_ident = [];
+Zcur_clean_all = [];
 emg_all = [];
 
 %% Num trials and Signal Types
@@ -292,7 +293,7 @@ for signal = 1:signals
         %Store the Models Identified for each noise level
         NHK_all = [NHK_all NHK];
         NHK = [];
-        Zcur_all = [Zcur_all Zcur];
+        Zcur_ident = [Zcur_ident Zcur];
         emg_all = [emg_all emg_simulink];
         
     end
@@ -308,6 +309,7 @@ for signal = 1:signals
     noise_snr_all(signal,:) = noise_snr;
     output_noise_power_all(signal,:) = output_noise_power;
     models_all = [models_all;NHK_all];
+    Zcur_clean_all = [Zcur_clean_all Zcur_clean];
     
     %Reset for next signal type
     accuracy_identification = [];

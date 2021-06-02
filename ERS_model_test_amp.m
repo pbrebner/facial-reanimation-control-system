@@ -76,7 +76,7 @@ end
 
 %Initialize
 NHK_all = [];
-Zcur_all = [];
+Zcur_ident = [];
 
 identification_accuracy = [];
 validation_accuracy = [];
@@ -197,7 +197,7 @@ for record_length = 1:num_record_lengths
         
         NHK_all = [NHK_all NHK];
         NHK = [];
-        Zcur_all = [Zcur_all Zcur];
+        Zcur_ident = [Zcur_ident Zcur];
         
     end
      
@@ -219,6 +219,8 @@ W = 0.55;                                       %Width of signal pulse (seconds)
 nf = physiological_movement_time/10;            %Number of random signal changes
 t_interval = physiological_movement_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
+
+Zcur_val = [];
 
 %% Generate Desired Displacement for Model Validation
 
@@ -345,6 +347,8 @@ for trial = 1:num_trials
         
     end
     
+    Zcur_val = [Zcur_val Zcur];
+    
 end
 
 %% Plot Accuracy (%VAF) vs Identifcation Signal Amplitude or Record Length
@@ -407,9 +411,9 @@ if variable_time == true
     validation_accuracy_var = var(validation_accuracy);
     validation_accuracy_std = std(validation_accuracy);
     
-    PRBS_movement_time = PRBS_movement_time(1,[1:4 6:end]);
-    validation_accuracy_mean = validation_accuracy_mean(1,[1:4 6:end]);
-    validation_accuracy_std = validation_accuracy_std(1,[1:4 6:end]);
+%     PRBS_movement_time = PRBS_movement_time(1,[1:4 6:end]);
+%     validation_accuracy_mean = validation_accuracy_mean(1,[1:4 6:end]);
+%     validation_accuracy_std = validation_accuracy_std(1,[1:4 6:end]);
     
     figure(figNum)
     figNum = figNum+1;
