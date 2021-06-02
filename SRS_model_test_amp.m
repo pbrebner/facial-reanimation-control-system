@@ -72,7 +72,8 @@ output_noise_power = [];
 
 %PRBS Signal Parameters (Dependent on the test selected)
 if variable_time == true
-    PRBS_stimulus_time = [1:1:15 20:5:25 30:15:90];
+    %PRBS_stimulus_time = [1:1:15 20:5:25 30:15:90];
+    PRBS_stimulus_time = [1 2 4 5 7 9:1:15 20:5:25 30:15:90];
 else
     PRBS_stimulus_time = 180;
 end
@@ -107,7 +108,7 @@ Hammerstein_all = [];
 Weiner_all = [];
 IRF_model_all = [];
 
-Zcur_all = [];
+Zcur_ident = [];
 
 identification_accuracy = [];
 validation_accuracy = [];
@@ -215,7 +216,7 @@ for record_length = 1:num_record_lengths
 
             LNL_all = [LNL_all LNL];
             LNL = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
             
         elseif Hammerstein_model == true
         
@@ -236,7 +237,7 @@ for record_length = 1:num_record_lengths
 
             Hammerstein_all = [Hammerstein_all Hammerstein];
             Hammerstein = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
 
         elseif Weiner_model == true
 
@@ -257,7 +258,7 @@ for record_length = 1:num_record_lengths
 
             Weiner_all = [Weiner_all Weiner];
             Weiner = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
 
         elseif Linear_IRF_model == true
             
@@ -277,7 +278,7 @@ for record_length = 1:num_record_lengths
             end
             
             IRF_model = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
             
         end  
         
@@ -301,6 +302,8 @@ W = 0.45;                                       %Width of Movement Pulse (second
 nf = physiological_stimulus_time/10;            %Number of random signal changes
 t_interval = physiological_stimulus_time/nf;    %Length of random interval (seconds)
 chance_of_zero = false;
+
+Zcur_val = [];
 
 %% Generate Desired Displacement and Amplitude Modulation Signal for Model Validation
 
@@ -462,6 +465,8 @@ for trial = 1:num_trials
         end
 
     end
+    
+    Zcur_val = [Zcur_val Zcur];
     
 end
 

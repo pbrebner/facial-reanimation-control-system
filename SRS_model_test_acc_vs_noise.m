@@ -89,7 +89,6 @@ end
 accuracy_identification = [];
 accuracy_identification_all = [];
 accuracy_validation = [];
-accuracy_validation_all = [];
 
 noise_snr_clean = [];
 noise_snr = [];
@@ -105,7 +104,8 @@ Weiner_all = [];
 
 models_all = [];
 
-Zcur_all = [];
+Zcur_ident = [];
+Zcur_clean_all = [];
 
 %% Num trials and Signal Types
 num_trials = str2;
@@ -321,7 +321,7 @@ for signal = 1:signals
 
             LNL_all = [LNL_all LNL];
             LNL = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
             
         elseif Hammerstein_model == true
         
@@ -343,7 +343,7 @@ for signal = 1:signals
 
             Hammerstein_all = [Hammerstein_all Hammerstein];
             Hammerstein = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
 
         elseif Weiner_model == true
 
@@ -366,7 +366,7 @@ for signal = 1:signals
 
             Weiner_all = [Weiner_all Weiner];
             Weiner = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
 
         elseif Linear_IRF_model == true
             
@@ -387,7 +387,7 @@ for signal = 1:signals
             end
             
             IRF_model = [];
-            Zcur_all = [Zcur_all Zcur];
+            Zcur_ident = [Zcur_ident Zcur];
 
         end
             
@@ -407,6 +407,8 @@ for signal = 1:signals
     elseif Weiner_model == true
         models_all = [models_all;Weiner_all];
     end
+    
+    Zcur_clean_all = [Zcur_clean_all Zcur_clean];
     
     accuracy_identification = [];
     noise_snr_clean = [];
