@@ -547,7 +547,8 @@ elseif multi_model == true
         [R, V, yp] = nlid_resid(SRS_inverse_IRF,Zcur_simulated_ident);
 
         accuracy_identification_IRF = [accuracy_identification_IRF V];
-
+        
+        %To save Data
         Zcur_simulated_ident_all = [Zcur_simulated_ident_all Zcur_simulated_ident];
         SRS_inverse_LNL_all = [SRS_inverse_LNL_all SRS_inverse_LNL];
         SRS_inverse_Hamm_all = [SRS_inverse_Hamm_all SRS_inverse_Hamm];
