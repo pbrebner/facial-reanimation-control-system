@@ -1,9 +1,154 @@
 % Journal Manuscript Figures
 
 %% ERS Identification
+clear all
+load('ERS_ident')
 
+figNum = 1;
+
+NHK1 = NHK_all(1);
+NHK2 = NHK_all(2);
+
+emg_pdf1 = emg_all(:,1);
+emg_pdf2 = emg_all(:,2);
+emg_pdf1(emg_pdf1==0) = []; %Removing the zero values
+emg_pdf2(emg_pdf2==0) = []; %Removing the zero values
+
+x_lim = 0.0008;
+
+%Sets the Upper Limit and Lower limit for "High Quality" values of the
+%model nonlinear element
+upper_limit1 = 0.000586;
+lower_limit1 = -0.000613;
+upper_limit2 = 0.000602;
+lower_limit2 = -0.00063;
+upper_limit3 = max(upper_limit1, upper_limit2);
+lower_limit3 = min(lower_limit1, lower_limit2);
+
+% figure(figNum)
+% figNum = figNum+1;
+% subplot(2,1,1)
+% plot(NHK1{1,1})
+% ax = gca;
+% ax.FontSize = 15;
+% title('(a) Static Nonlinearity','Fontsize', 24)
+% xlabel('EMG Input, E(t) (V)','Fontsize',18)
+% ylabel('Transformed EMG (V)','Fontsize',18)
+% xline(upper_limit1,'--r','LineWidth',2);
+% xline(lower_limit1,'--r','LineWidth',2);
+% xlim([-x_lim x_lim])
+% grid on
+% 
+% subplot(2,1,2)
+% histogram(emg_pdf1,'Normalization','pdf')
+% ax = gca;
+% ax.FontSize = 15;
+% xline(upper_limit1,'--r','LineWidth',2);
+% xline(lower_limit1,'--r','LineWidth',2);
+% xlabel('EMG Amplitude (V)','Fontsize',18)
+% ylabel('Density','Fontsize',18)
+% title('(b) EMG Distribution','Fontsize',24)
+% xlim([-x_lim x_lim])
+% grid on
+
+figure(figNum)
+figNum = figNum+1;
+subplot(1,2,1)
+plot(NHK1{1,1})
+ax = gca;
+ax.FontSize = 15;
+title('(a) Static Nonlinearity','Fontsize', 24)
+xlabel('EMG Input, E(t) (V)','Fontsize',18)
+ylabel('Transformed EMG (V)','Fontsize',18)
+xlim([lower_limit1 upper_limit1])
+grid on
+
+subplot(1,2,2)
+plot(NHK1{1,2})
+ax = gca;
+ax.FontSize = 15;
+title('(b) Linear Element','Fontsize', 24)
+xlabel('Lags (s)','Fontsize',18)
+ylabel('X1','Fontsize',18)
+grid on
+
+figure(figNum)
+figNum = figNum+1;
+subplot(2,1,1)
+plot(NHK2{1,1})
+ax = gca;
+ax.FontSize = 15;
+title('(a) Static Nonlinearity','Fontsize', 24)
+xlabel('EMG Input, E(t) (V)','Fontsize',18)
+ylabel('Transformed EMG (V)','Fontsize',18)
+xline(upper_limit2,'--r','LineWidth',2);
+xline(lower_limit2,'--r','LineWidth',2);
+xlim([-x_lim x_lim])
+grid on
+
+subplot(2,1,2)
+histogram(emg_pdf2,'Normalization','pdf')
+ax = gca;
+ax.FontSize = 15;
+xline(upper_limit2,'--r','LineWidth',2);
+xline(lower_limit2,'--r','LineWidth',2);
+xlabel('EMG Amplitude (V)','Fontsize',18)
+ylabel('Density','Fontsize',18)
+title('(b) EMG Distribution','Fontsize',24)
+xlim([-x_lim x_lim])
+grid on
+
+figure(figNum)
+figNum = figNum+1;
+subplot(1,2,1)
+plot(NHK2{1,1})
+ax = gca;
+ax.FontSize = 15;
+title('(a) Static Nonlinearity','Fontsize', 24)
+xlabel('EMG Input, E(t) (V)','Fontsize',18)
+ylabel('Transformed EMG (V)','Fontsize',18)
+xlim([lower_limit2 upper_limit2])
+grid on
+
+subplot(1,2,2)
+plot(NHK2{1,2})
+ax = gca;
+ax.FontSize = 15;
+title('(b) Linear Element','Fontsize', 24)
+xlabel('Lags (s)','Fontsize',18)
+ylabel('X1','Fontsize',18)
+grid on
+
+figure(figNum)
+figNum = figNum+1;
+subplot(1,2,1)
+plot(NHK1{1,1})
+hold on
+plot(NHK2{1,1})
+hold off
+ax = gca;
+ax.FontSize = 15;
+title('(a) Static Nonlinearities','Fontsize', 24)
+xlabel('EMG Input, E(t) (V)','Fontsize',18)
+ylabel('Transformed EMG (V)','Fontsize',18)
+xlim([lower_limit3 upper_limit3])
+grid on
+
+subplot(1,2,2)
+plot(NHK1{1,2})
+hold on
+plot(NHK2{1,2})
+ax = gca;
+ax.FontSize = 15;
+title('(b) Linear Elements','Fontsize', 24)
+ylabel('X1', 'Fontsize',18)
+xlabel('Lags (s)','Fontsize',18)
+legend('PRBS', 'Physiological','Fontsize',16)
+grid on
+hold off
 
 %% SRS Identification
+load('SRS_ident')
 
 
 %% ERS/SRS Noise
