@@ -669,7 +669,48 @@ for signal = 1:length(PRBS_movement)
     ylabel('Healthy Displacement, Pos_H(t) (m)', 'Fontsize', 24)
     legend('Predicted', 'Observed', 'Fontsize', 20)
     grid on
+    
+    %Plots Desired Displacement, EMG, Superimposed Predicted and Observed
+    %Output Displacement, and Residuals
+    figure(figNum);
+    figNum = figNum+1;
+    subplot(4,1,1)
+    plot(t_total,desired_displacement);
+    ax = gca;
+    ax.FontSize = 14;
+    ylabel('Displacement (m)','Fontsize',13)
+    title('(a) "Physiological" Desired Displacement','Fontsize',16)
+    grid on
 
+    subplot(4,1,2)
+    plot(t_total,emg_simulink)
+    ax = gca;
+    ax.FontSize = 14;
+    ylabel('EMG (V)','Fontsize',13);
+    title('(b) Output EMG, E(t)','Fontsize',16)
+    grid on
+
+    subplot(4,1,3)
+    plot(t_total,pred);
+    hold on
+    plot(t_total, output_displacement_simulink)
+    ax = gca;
+    ax.FontSize = 14;
+    hold off
+    title(['(c) Superimposed Pos_H(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 16)
+    ylabel('Displacement (m)', 'Fontsize', 13)
+    legend('Predicted', 'Observed', 'Fontsize', 12)
+    grid on
+
+    subplot(4,1,4)
+    plot(R)
+    ax = gca;
+    ax.FontSize = 15;
+    title('(d) Residuals of ERS Hammerstein Model','Fontsize',16)
+    xlabel('Time (s)','Fontsize',16)
+    ylabel('Displacement (m)','Fontsize',13)
+    grid on
+    
     %Plots the Residuals, Residuals Distribution, and Residual Power Spectrum
     figure(figNum)
     figNum = figNum+1;
@@ -970,3 +1011,46 @@ if compare_two_models == true
 end
 
 tEnd = toc(tStart)/60
+
+
+%%
+%Plots Desired Displacement, EMG, Superimposed Predicted and Observed
+%Output Displacement, and Residuals
+figure(figNum);
+figNum = figNum+1;
+subplot(4,1,1)
+plot(t_total,desired_displacement);
+ax = gca;
+ax.FontSize = 14;
+ylabel('Displacement (m)','Fontsize',13)
+title('(a) "Physiological" Desired Displacement','Fontsize',16)
+grid on
+
+subplot(4,1,2)
+plot(t_total,emg_simulink)
+ax = gca;
+ax.FontSize = 14;
+ylabel('EMG (V)','Fontsize',13);
+title('(b) Output EMG, E(t)','Fontsize',16)
+grid on
+
+subplot(4,1,3)
+plot(t_total,pred);
+hold on
+plot(t_total, output_displacement_simulink)
+ax = gca;
+ax.FontSize = 14;
+hold off
+title(['(c) Superimposed Pos_H(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 16)
+ylabel('Displacement (m)', 'Fontsize', 13)
+legend('Predicted', 'Observed', 'Fontsize', 12)
+grid on
+
+subplot(4,1,4)
+plot(R)
+ax = gca;
+ax.FontSize = 15;
+title('(d) Residuals of ERS Hammerstein Model','Fontsize',16)
+xlabel('Time (s)','Fontsize',16)
+ylabel('Displacement (m)','Fontsize',13)
+grid on
