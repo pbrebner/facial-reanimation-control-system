@@ -770,6 +770,8 @@ for num_signals = 1:length(PRBS_stimulus)
         Weiner{1,1} = I;
         
         Weiner=nlident(Weiner,Zcur);
+        %Weiner = Weiner*-1;
+        %Weiner = normCoefLE(Weiner);
         
         figure(figNum)
         figNum = figNum+1;
@@ -1028,3 +1030,73 @@ elseif compare_two_models == true && Linear_IRF_model == true
 end
 
 tEnd = toc(tStart)/60
+
+%%
+%Plot Desired Displacement, Amplitude Modulation Input, Predicted and
+%Observed Paralyzed Displacement, and Residuals
+figure(figNum)
+figNum = figNum+1;
+subplot(4,1,1)
+plot(t_total,desired_displacement)
+ax = gca;
+ax.FontSize = 13;
+ylabel('Displacement (m)','Fontsize',12)
+title('(a) "Physiological" Desired Displacement','Fontsize',16)
+grid on
+
+subplot(4,1,2)
+plot(t_total,amplitude_modulation)
+ax = gca;
+ax.FontSize = 13;
+ylabel('Amplitude (V)','Fontsize',12);
+title('(b) Amplitude Modulation Input, A(t)','Fontsize',16)
+grid on
+
+subplot(4,1,3)
+plot(t_total,pred);
+hold on
+plot(t_total, output_displacement_simulink)
+ax = gca;
+ax.FontSize = 13;
+hold off
+title(['(c) Superimposed Pos_P(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 16)
+ylabel('Displacement (m)', 'Fontsize', 12)
+legend('Predicted', 'Observed', 'Fontsize', 12)
+
+subplot(4,1,4)
+plot(R)
+ax = gca;
+ax.FontSize = 13;
+title('(d) Residuals from SRS Identification','Fontsize',16)
+xlabel('Time (s)','Fontsize',16)
+ylabel('Displacement (m)','Fontsize',12)
+grid on
+
+%Plot the Inverted SRS Model (Wiener Model)
+TEST1 = Weiner2{1,1};
+TEST2 = Weiner2{1,2};
+
+TEST1.dataSet = -TEST1.dataSet;
+TEST2.polyRange = -TEST2.polyRange;
+
+figure(figNum)
+figNum = figNum+1;
+subplot(1,2,1)
+%plot(Weiner2{1,1})
+plot(TEST1)
+ax = gca;
+ax.FontSize = 15;
+title('(a) Linear Element','Fontsize', 22)
+ylabel('X1', 'Fontsize',18)
+xlabel('Lags (s)','Fontsize',18)
+grid on
+
+subplot(1,2,2)
+%plot(Weiner2{1,2})
+plot(TEST2)
+ax = gca;
+ax.FontSize = 15;
+title('(b) Static Nonlinearity','Fontsize', 22)
+xlabel('Transformed Displacement Input (m)','Fontsize',18)
+ylabel('Paralyzed Displacement Output, Pos_P(t) (m)','Fontsize',18)
+grid on
