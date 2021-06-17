@@ -1039,17 +1039,18 @@ figNum = figNum+1;
 subplot(4,1,1)
 plot(t_total,desired_displacement)
 ax = gca;
-ax.FontSize = 13;
+ax.FontSize = 14;
+ax.YAxis.Exponent = -3;
 ylabel('Displacement (m)','Fontsize',12)
-title('(a) "Physiological" Desired Displacement','Fontsize',16)
+title('(a) "Physiological" Desired Displacement','Fontsize',14)
 grid on
 
 subplot(4,1,2)
 plot(t_total,amplitude_modulation)
 ax = gca;
-ax.FontSize = 13;
+ax.FontSize = 14;
 ylabel('Amplitude (V)','Fontsize',12);
-title('(b) Amplitude Modulation Input, A(t)','Fontsize',16)
+title('(b) Amplitude Modulation Input, A(t)','Fontsize',14)
 grid on
 
 subplot(4,1,3)
@@ -1057,18 +1058,18 @@ plot(t_total,pred);
 hold on
 plot(t_total, output_displacement_simulink)
 ax = gca;
-ax.FontSize = 13;
+ax.FontSize = 14;
 hold off
-title(['(c) Superimposed Pos_P(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 16)
+title(['(c) Superimposed Pos_P(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 14)
 ylabel('Displacement (m)', 'Fontsize', 12)
-legend('Predicted', 'Observed', 'Fontsize', 12)
+legend('Predicted', 'Observed', 'Fontsize', 10)
 
 subplot(4,1,4)
 plot(R)
 ax = gca;
-ax.FontSize = 13;
-title('(d) Residuals from SRS Identification','Fontsize',16)
-xlabel('Time (s)','Fontsize',16)
+ax.FontSize = 14;
+title('(d) Residuals from SRS Identification','Fontsize',14)
+xlabel('Time (s)','Fontsize',14)
 ylabel('Displacement (m)','Fontsize',12)
 grid on
 
