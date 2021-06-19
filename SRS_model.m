@@ -1041,6 +1041,8 @@ plot(t_total,desired_displacement)
 ax = gca;
 ax.FontSize = 14;
 ax.YAxis.Exponent = -3;
+xticks([0 50 100 150 200 250 300 350 400 450 500])
+xticklabels({});
 ylabel('Displacement (m)','Fontsize',12)
 title('(a) "Physiological" Desired Displacement','Fontsize',14)
 grid on
@@ -1049,6 +1051,8 @@ subplot(4,1,2)
 plot(t_total,amplitude_modulation)
 ax = gca;
 ax.FontSize = 14;
+xticks([0 50 100 150 200 250 300 350 400 450 500])
+xticklabels({});
 ylabel('Amplitude (V)','Fontsize',12);
 title('(b) Amplitude Modulation Input, A(t)','Fontsize',14)
 grid on
@@ -1059,6 +1063,8 @@ hold on
 plot(t_total, output_displacement_simulink)
 ax = gca;
 ax.FontSize = 14;
+xticks([0 50 100 150 200 250 300 350 400 450 500])
+xticklabels({});
 hold off
 title(['(c) Superimposed Pos_P(t), VAF = ' num2str(round(V,1)) '%'], 'Fontsize', 14)
 ylabel('Displacement (m)', 'Fontsize', 12)
