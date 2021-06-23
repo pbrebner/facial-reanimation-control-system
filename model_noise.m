@@ -91,7 +91,8 @@ ERS_emg_all = [];
 
 %% Num trials and Signal Types
 num_trials = str1;
-signals = 2;
+%signals = 2;
+signals = 1; %Only the Phys
 
 %% Generate the Desired Displacement for Model Identification
 
@@ -482,14 +483,14 @@ ERS_accuracy_identification_all = max(0, ERS_accuracy_identification_all);
 
 figure(figNum)
 figNum = figNum+1;
-plot(ERS_noise_snr_all_clean(2,:),ERS_accuracy_identification_all(2,:),'LineWidth',3);
+% plot(ERS_noise_snr_all_clean(2,:),ERS_accuracy_identification_all(2,:),'LineWidth',3);
 hold on
 plot(ERS_noise_snr_all_clean(1,:),ERS_accuracy_identification_all(1,:),'LineWidth',3);
 hold off
 ax = gca;
 ax.FontSize = 15;
 title('ERS Identification Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
 ylabel('Accuracy (% VAF)','Fontsize',18); 
 xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
 grid on
@@ -523,12 +524,12 @@ ERS_accuracy_validation_std = std(ERS_accuracy_validation);
 figure(figNum)
 figNum = figNum+1;
 hold on
-plot(ERS_noise_snr_all_clean(2,:),ERS_accuracy_validation_mean(:,:,2),'LineWidth',3);
+% plot(ERS_noise_snr_all_clean(2,:),ERS_accuracy_validation_mean(:,:,2),'LineWidth',3);
 plot(ERS_noise_snr_all_clean(1,:),ERS_accuracy_validation_mean(:,:,1),'LineWidth',3);
 
-plot(ERS_noise_snr_all_clean(2,:),min(ERS_accuracy_validation_mean(:,:,2)+ERS_accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
-plot(ERS_noise_snr_all_clean(2,:),max(ERS_accuracy_validation_mean(:,:,2)-ERS_accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
-patch([ERS_noise_snr_all_clean(2,:) fliplr(ERS_noise_snr_all_clean(2,:))], [min(ERS_accuracy_validation_mean(:,:,2)+ERS_accuracy_validation_std(:,:,2),100) fliplr(max(ERS_accuracy_validation_mean(:,:,2)-ERS_accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
+% plot(ERS_noise_snr_all_clean(2,:),min(ERS_accuracy_validation_mean(:,:,2)+ERS_accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
+% plot(ERS_noise_snr_all_clean(2,:),max(ERS_accuracy_validation_mean(:,:,2)-ERS_accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
+% patch([ERS_noise_snr_all_clean(2,:) fliplr(ERS_noise_snr_all_clean(2,:))], [min(ERS_accuracy_validation_mean(:,:,2)+ERS_accuracy_validation_std(:,:,2),100) fliplr(max(ERS_accuracy_validation_mean(:,:,2)-ERS_accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
 
 plot(ERS_noise_snr_all_clean(1,:),min(ERS_accuracy_validation_mean(:,:,1)+ERS_accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
 plot(ERS_noise_snr_all_clean(1,:),max(ERS_accuracy_validation_mean(:,:,1)-ERS_accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
@@ -537,7 +538,7 @@ hold off
 ax = gca;
 ax.FontSize = 15;
 title('ERS Validation Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
 ylabel('Accuracy (% VAF)','Fontsize',18); 
 xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
 grid on
@@ -650,7 +651,8 @@ SRS_Zcur_clean_all = [];
 
 %% Num trials and Signal Types
 num_trials = str2;
-signals = 2;
+%signals = 2;
+signals = 1; %Only the Phys
 
 %% Generate the Desired Displacement and Amplitude Modulation for Model Identification
 
@@ -1170,21 +1172,21 @@ SRS_accuracy_identification_all = max(0, SRS_accuracy_identification_all);
 
 figure(figNum)
 figNum = figNum+1;
-plot(SRS_noise_snr_all_clean(2,:),SRS_accuracy_identification_all(2,:),'LineWidth',3);
+% plot(SRS_noise_snr_all_clean(2,:),SRS_accuracy_identification_all(2,:),'LineWidth',3);
 hold on
 plot(SRS_noise_snr_all_clean(1,:),SRS_accuracy_identification_all(1,:),'LineWidth',3);
 hold off
 ax = gca;
 ax.FontSize = 15;
 title('SRS Identification Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
 ylabel('Accuracy (% VAF)','Fontsize',18); 
 xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
 grid on
 
 SRS_accuracy_validation = max(0, SRS_accuracy_validation);
-accuracy_validation_mean = mean(SRS_accuracy_validation);
-accuracy_validation_std = std(SRS_accuracy_validation);
+SRS_accuracy_validation_mean = mean(SRS_accuracy_validation);
+SRS_accuracy_validation_std = std(SRS_accuracy_validation);
 
 % figure(figNum)
 % figNum = figNum+1;
@@ -1211,21 +1213,21 @@ accuracy_validation_std = std(SRS_accuracy_validation);
 figure(figNum)
 figNum = figNum+1;
 hold on
-plot(SRS_noise_snr_all_clean(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
-plot(SRS_noise_snr_all_clean(1,:),accuracy_validation_mean(:,:,1),'LineWidth',3);
+% plot(SRS_noise_snr_all_clean(2,:),SRS_accuracy_validation_mean(:,:,2),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),SRS_accuracy_validation_mean(:,:,1),'LineWidth',3);
 
-plot(SRS_noise_snr_all_clean(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
-plot(SRS_noise_snr_all_clean(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
-patch([SRS_noise_snr_all_clean(2,:) fliplr(SRS_noise_snr_all_clean(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
+% plot(SRS_noise_snr_all_clean(2,:),min(SRS_accuracy_validation_mean(:,:,2)+SRS_accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
+% plot(SRS_noise_snr_all_clean(2,:),max(SRS_accuracy_validation_mean(:,:,2)-SRS_accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
+% patch([SRS_noise_snr_all_clean(2,:) fliplr(SRS_noise_snr_all_clean(2,:))], [min(SRS_accuracy_validation_mean(:,:,2)+SRS_accuracy_validation_std(:,:,2),100) fliplr(max(SRS_accuracy_validation_mean(:,:,2)-SRS_accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
 
-plot(SRS_noise_snr_all_clean(1,:),min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
-plot(SRS_noise_snr_all_clean(1,:),max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
-patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(accuracy_validation_mean(:,:,1)+accuracy_validation_std(:,:,1),100) fliplr(max(accuracy_validation_mean(:,:,1)-accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
+plot(SRS_noise_snr_all_clean(1,:),min(SRS_accuracy_validation_mean(:,:,1)+SRS_accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(SRS_accuracy_validation_mean(:,:,1)-SRS_accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(SRS_accuracy_validation_mean(:,:,1)+SRS_accuracy_validation_std(:,:,1),100) fliplr(max(SRS_accuracy_validation_mean(:,:,1)-SRS_accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
 hold off
 ax = gca;
 ax.FontSize = 15;
 title('SRS Validation Accuracy vs Output Noise','Fontsize',24);
-legend('PRBS','Physiological','Location','southeast','FontSize',18)
+% legend('PRBS','Physiological','Location','southeast','FontSize',18)
 ylabel('Accuracy (% VAF)','Fontsize',18); 
 xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
 grid on
@@ -1266,7 +1268,8 @@ PRBS_amplitude = 20;            %PRBS Signal Amplitude (mm)
 
 %Number of Signals (Identification and Validation)
 num_signals = str3+1;
-%num_signals = str3+noise_level_iters;
+%num_signals = str3+noise_level_iters; %If we want to use a new signal for
+%each inverse SRS identification
 
 %Inverse Model Structure
 SRS_inverse_LNL = false;
@@ -1429,6 +1432,10 @@ for noise_level = 1:noise_level_iters
         SRS_inverse{1,2} = I2;
 
         SRS_inverse = nlident(SRS_inverse,Zcur_simulated);
+        
+        SRS_inverse_IRF = SRS_inverse{1,2};
+        set(SRS_inverse_IRF, 'domainIncr', 1.0e-3);
+        SRS_inverse{1,2} = SRS_inverse_IRF;
 
     elseif SRS_inverse_Weiner == true
 
@@ -1469,6 +1476,7 @@ for noise_level = 1:noise_level_iters
     end
     
     SRS_inverse_all = [SRS_inverse_all;SRS_inverse];
+    SRS_inverse = [];
     
 end
 
@@ -1481,7 +1489,7 @@ figure(figNum)
 figNum = figNum+1;
 %plot(noise_snr_all_clean(2,:),accuracy_identification_all(2,:),'LineWidth',3);
 hold on
-plot(noise_snr_all_clean(1,:),inverse_SRS_identification_accuracy(1,:),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),inverse_SRS_identification_accuracy(1,:),'LineWidth',3);
 hold off
 ax = gca;
 ax.FontSize = 15;
@@ -1503,15 +1511,15 @@ figure(figNum)
 figNum = figNum+1;
 hold on
 %plot(noise_snr_all_clean(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
-plot(noise_snr_all_clean(1,:),accuracy_validation_mean(1,:),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),inverse_SRS_validation_accuracy_mean(1,:),'LineWidth',3);
 
 %plot(noise_snr_all_clean(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
 %plot(noise_snr_all_clean(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
 %patch([noise_snr_all_clean(2,:) fliplr(noise_snr_all_clean(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
 
-plot(noise_snr_all_clean(1,:),min(accuracy_validation_mean(1,:)+accuracy_validation_std(1,:),100),'LineStyle','none','LineWidth',2)
-plot(noise_snr_all_clean(1,:),max(accuracy_validation_mean(1,:)-accuracy_validation_std(1,:),0),'LineStyle','none','LineWidth',2)
-patch([noise_snr_all_clean(1,:) fliplr(noise_snr_all_clean(1,:))], [min(accuracy_validation_mean(1,:)+accuracy_validation_std(1,:),100) fliplr(max(accuracy_validation_mean(1,:)-accuracy_validation_std(1,:),0))], 'b','FaceAlpha',0.2)
+plot(SRS_noise_snr_all_clean(1,:),min(inverse_SRS_validation_accuracy_mean(1,:)+inverse_SRS_validation_accuracy_std(1,:),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(inverse_SRS_validation_accuracy_mean(1,:)-inverse_SRS_validation_accuracy_std(1,:),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(inverse_SRS_validation_accuracy_mean(1,:)+inverse_SRS_validation_accuracy_std(1,:),100) fliplr(max(inverse_SRS_validation_accuracy_mean(1,:)-inverse_SRS_validation_accuracy_std(1,:),0))], 'b','FaceAlpha',0.2)
 hold off
 ax = gca;
 ax.FontSize = 15;
@@ -1523,12 +1531,568 @@ grid on
 
 %% FRCS Execute and Evaluation
 
+prompt1 = 'Type of FRCS Input? PRBS/Physiological(Phys) [Phys]: ';
+str1 = input(prompt1,'s');
+if ~strcmp(str1,'PRBS') & ~strcmp(str1,'Phys') & ~isempty(str1)
+    disp('Invalid Input')
+    return
+elseif isempty(str1)
+    str1 = 'Phys';
+end
 
+if strcmp(str1,'PRBS')
+    PRBS_signal = true;
+elseif strcmp(str1,'Phys')
+    PRBS_signal = false;
+end 
+FRCS_input_type = str1;
 
+prompt2 = 'Number of Validation Trials? 1-100 [1]: ';
+str2 = input(prompt2);
+if str2<1 | str2>100
+    disp('Invalid Input')
+    return
+elseif isempty(str2)
+    str2 = 1;
+end
 
+% prompt3 = 'Number of FRCS Versions? 1-20 [1]: ';
+% str3 = input(prompt3);
+% if str3<1 | str3>20
+%     disp('Invalid Input')
+%     return
+% elseif isempty(str3)
+%     str3 = 1;
+% end
 
+%% Set initial Parameters
 
+Fs = 1000; 
+Nfft = 10000;
+figNum = 406;
 
+%ERS and SRS Model
+% if strcmp(SRS_inverse_input_type,'PRBS')
+%     EMG_response_system = ERS_all(1);
+% elseif strcmp(SRS_inverse_input_type,'Phys')
+%     EMG_response_system = ERS_all(2);
+% end
 
+EMG_response_system = ERS_models_all;
+
+%PRBS Signal Parameters
+PRBS_movement_time = 180;
+variable_amplitude = false;
+N = PRBS_movement_time/10;
+M = 10000;
+PRBS_amplitude = 10;                            %PRBS Amplitude (mm)
+
+%Set Physiological Signal Parameters
+physiological_movement_time = 180;
+physiological_stimulus_max_amplitude = 0.01;
+fr = 0.1;                                       %Frequency distribution mean (Hz)
+sig = 0.6;                                      %Std of Frequency Distribution (Hz)
+W = 0.55;
+nf = physiological_movement_time/10;            %Number of random signal changes
+t_interval = physiological_movement_time/nf;    %Length of random interval (s)
+chance_of_zero = false;
+
+%Number of Validation Trials and FRCS Versions
+num_val_trials = str2;
+%num_FRCS_models = str3;
+
+FRCS_validation_accuracy = [];
+
+%% Generate the Desired Displacement Signal for ERS Simulation
+
+for noise_level = 1:noise_level_iters
+    
+    %Tests the FRCS on multiple signal realizations
+    %Only plots the results of the first realization
+    for trial = 1:num_val_trials
+
+        %This is used to get an EMG Signal for Input to the FRCS
+        if PRBS_signal == true
+
+            t_total = 0:0.001:PRBS_movement_time;
+            time = PRBS_movement_time;
+
+            A = 0;                                      %Intialize amplitude
+            if variable_amplitude == true   
+                for k = 1:N
+                    if k == 1
+                        R = PRBS_amplitude;
+                    else
+                        R = rand(1,1)*PRBS_amplitude;   %Randomly generate a number between 0 and PRBS Amplitude
+                    end
+                    for j = 1:M
+                        A = [A R];
+                    end
+                end
+            else
+                A = PRBS_amplitude;              %Else set as Constant Amplitude
+            end
+
+            Range = [0,0.001]; %Specify what the single-channel PRBS value switches between
+
+            %Specify the clock period of the signal as 1 sample. 
+            %That is, the signal value can change at each time step. 
+            %For PRBS signals, the clock period is specified in Band = [0 B], 
+            %where B is the inverse of the required clock period
+            %(Must be less than 1)
+            Band = [0 0.01];
+
+            %Generate a nonperiodic PRBS of length time
+            u = idinput(time*1000+1,'prbs',Band,Range);
+
+            %Create an iddata object from the generated signal. 
+            %For this example, specify the sample time as 0.001 second.
+            u = iddata([],u,0.001);
+
+            U = (u.InputData)';
+            desired_displacement = A.*U;
+
+        else
+
+            t_total = 0:0.001:physiological_movement_time;
+            time = physiological_movement_time;
+
+            FR = makedist('Normal','mu',fr,'sigma',sig);
+            FrequenciesRandom_max = 1.8;
+            FrequenciesRandom = truncate(FR,0,FrequenciesRandom_max);
+            freq_distribution = random(FrequenciesRandom,10000,1);
+
+            AR = makedist('Uniform','lower',0,'upper',physiological_stimulus_max_amplitude);  %Full Amplitude Range
+            AmplitudesRandom = AR;
+            amp_distribution = random(AmplitudesRandom,10000,1);
+
+            desired_displacement= 0;
+            Freq_test = [];
+            Pulses_per_interval_test = [];
+
+            for j = 1 : nf    
+                t  = 0 : 0.001 : t_interval;         % Time Intervals
+
+                if j == 1
+                    Freq = FrequenciesRandom_max;
+                    A = physiological_stimulus_max_amplitude;
+                else
+                    Freq = random(FrequenciesRandom,1,1);
+                    A = random(AmplitudesRandom,1,1);
+                end
+
+                if chance_of_zero == true
+                    nums = randi([0 1], 1, 1);
+                else
+                    nums = 0;
+                end
+
+                if nums == 0
+                    g = 1/Freq;
+                    D = (1:g:t_interval)';     % pulse delay times
+                    data = (A*pulstran(t,D,@rectpuls,W))';
+                    stim_frequency = Freq;
+                    Pulses_per_interval = t_interval/g;
+                    data(end) = [];
+                else
+                    data = zeros(20000,1);
+                    stim_frequency = 0;
+                    Pulses_per_interval = 0;
+                end
+
+                desired_displacement = [desired_displacement; data];
+                Freq_test = [Freq_test stim_frequency];
+                Pulses_per_interval_test = [Pulses_per_interval_test Pulses_per_interval];
+            end
+
+            Pulses_per_interval_total = sum(Pulses_per_interval_test);
+            Freq_test_average = sum(Freq_test)/length(Freq_test);
+
+            desired_displacement = desired_displacement';
+
+        end
+
+        %% Generate Neural Input Command Signal for ERS Simulation
+
+        %Neural Input Parameters are based on desired displacement amplitude
+        Amplitude = desired_displacement*100;  %mV
+        Frequency = desired_displacement*14000;  %Hz
+
+        neural = (max(Amplitude.*square(2*pi*Frequency.*t_total),0))';
+        neural_simulink = [t_total' neural];
+
+        %% Generate EMG Signal use EMG Simulation (Simulink Model)
+
+        %Run Simulink;
+        out = sim('ERS_simulation',time);
+
+        %Get Output from Simulink Model (EMG)
+        EMG_simulink = out.ERS_Simulation_EMG;
+        t_simulink = out.tout;
+
+        EMG_simulink = nldat(EMG_simulink);
+        set(EMG_simulink, 'domainIncr',0.001);
+
+        EMG_double = EMG_simulink.dataSet;
+
+        %% Simulate FRCS Response to EMG Input
+
+        %Set domain increments of EMG response model
+%         EMG_response_system_IRF = EMG_response_system{1,2};
+%         set(EMG_response_system_IRF, 'domainIncr', 1.0e-3);
+%         EMG_response_system{1,2} = EMG_response_system_IRF;
+
+        %Simulate Response of ERS to EMG Input
+        control_system_displacement = nlsim(ERS_models_all(1,noise_level),EMG_simulink);
+        set(control_system_displacement,'domainIncr',0.001);
+
+        %Simulate Response of Inverse SRS to Healthy Displacement (Output of ERS)
+        control_system_output = nlsim(SRS_inverse_all(1,noise_level),control_system_displacement);
+        set(control_system_output,'domainIncr',0.001);
+
+        control_system_displacement_double = control_system_displacement.dataSet;
+        control_system_output_double = control_system_output.dataSet;
+
+        %% Plot Inputs and Output of Facial Reanimation Control System
+
+    %     if trial == 1
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         sgtitle('Inputs/Outputs of FRCS','Fontsize',14)
+    % 
+    %         subplot(3,2,1)
+    %         plot(t_total,neural)
+    %         title('Neural Command Input for ERS Simulation','Fontsize',14)
+    %         xlabel('Time (s)','Fontsize',14)
+    %         ylabel('Amplitude (% of MUs)', 'Fontsize', 14)
+    %         grid on
+    % 
+    %         subplot(3,2,2)
+    %         plot(t_total,EMG_double)
+    %         title('EMG Input from ERS Simulation','Fontsize',14)
+    %         xlabel('Time (s)','Fontsize',14)
+    %         ylabel('Amplitude (V)', 'Fontsize', 14)
+    %         grid on
+    % 
+    %         subplot(3,2,[3 4])
+    %         plot(t_total(1,1:end-1999),control_system_displacement_double(1000:end-1000,1));
+    %         title('ERS Output (Healthy Side Predicted Displacement)', 'Fontsize', 14)
+    %         ylabel('Displacement (m)', 'Fontsize', 14)
+    %         grid on
+    % 
+    %         subplot(3,2,[5 6])
+    %         plot(t_total(1,1:end-1999),control_system_output_double(1000:end-1000,:));
+    %         title('FRCS Output (Amplitude Modulation)', 'Fontsize', 14)
+    %         xlabel('Time (s)','Fontsize',14)
+    %         ylabel('Amplitude', 'Fontsize', 14)
+    %         grid on
+    %     end
+
+        %% Run the Control System Output (Amplitude Modulation) through SRS Simulation
+
+        predicted_healthy_displacement = control_system_displacement_double(1000:end-1000,1);
+
+        %Execute SRS Simulation with amplitude modulation input
+        amplitude_modulation = control_system_output_double;
+        amplitude_modulation_simulink = [(t_total(1,1:end-1999))' amplitude_modulation(1000:end-1000,:)];
+
+        %Set Output Noise as zero
+        set_output_noise_power = 0;
+        set_param('SRS_simulation/Output Noise','Cov','set_output_noise_power')
+
+        %Run Simulink;
+        time = length(t_total(1,1:end-2000))/1000;
+        out = sim('SRS_simulation',time);
+
+        %Get Output signals from SRS Simulation
+        electrical_stimulus = out.SRS_Simulation_Stimulus;
+        predicted_paralyzed_displacement = out.SRS_Simulation_Displacement;
+        t_simulink = out.tout;
+
+        Variance = vaf(predicted_healthy_displacement,predicted_paralyzed_displacement); 
+        FRCS_validation_accuracy(trial,noise_level) = Variance;
+
+        %To save the displacement data
+        FRCS_desired_displacement_all(:,trial,noise_level) = desired_displacement;
+        FRCS_predicted_healthy_displacement_all(:,trial,noise_level) = predicted_healthy_displacement;
+        FRCS_predicted_paralyzed_displacement_all(:,trial,noise_level) = predicted_paralyzed_displacement;
+
+    %     if trial == 1
+    %         %plot the stimulus that is created based on the amplitude modulation
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         plot(t_total(1,1:end-1999),electrical_stimulus)
+    %         title('Electrical Stimulus Signal based on FRCS Amplitude Modulation Output')
+    %         ylabel('Voltage (V)')
+    %         xlabel('Time (s)')
+    %         grid on
+    % 
+    %         %Compare the predicted healthy displacement and predicted paralyzed
+    %         %displacement with the desired displacement
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         subplot(4,1,1)
+    %         plot(t_total(1,1:end-1999),desired_displacement(:,1000:end-1000))
+    %         ax = gca;
+    %         ax.FontSize = 10;
+    %         title('(a) Desired Displacement', 'Fontsize', 12)
+    %         ylabel('Displacement (m)', 'Fontsize', 12)
+    %         grid on
+    % 
+    %         subplot(4,1,2)
+    %         plot(t_total(1,1:end-1999),predicted_healthy_displacement)
+    %         ax = gca;
+    %         ax.FontSize = 10;
+    %         title('(b) Predicted Healthy Displacement, Pos_H(t)', 'Fontsize', 12)
+    %         ylabel('Displacement (m)', 'Fontsize', 12)
+    %         grid on
+    % 
+    %         subplot(4,1,3)
+    %         plot(t_total(1,1:end-1999),predicted_paralyzed_displacement)
+    %         ax = gca;
+    %         ax.FontSize = 10;
+    %         title('(c) Predicted Paralyzed Displacement, Pos_P(t)', 'Fontsize', 12)
+    %         ylabel('Displacement (m)', 'Fontsize', 12)
+    %         grid on
+    % 
+    %         subplot(4,1,4)
+    %         hold on
+    %         plot(t_total(1,1:end-1999),predicted_healthy_displacement)
+    %         plot(t_total(1,1:end-1999),predicted_paralyzed_displacement)
+    %         hold off
+    %         ax = gca;
+    %         ax.FontSize = 10;
+    %         title(['(d) Superimposed, VAF = ' num2str(round(Variance,1)) '%'], 'Fontsize', 12)
+    %         xlabel('Time (s)', 'Fontsize', 12)
+    %         ylabel('Displacement (m)', 'Fontsize', 12)
+    %         legend('Pos_H(t)', 'Pos_P(t)','Fontsize',10)
+    %         grid on
+    % 
+    %         %PDF and Spectrum of Residuals (between predicted healthy displacement and
+    %         %predicted paralyzed displacement)
+    %         residuals = predicted_healthy_displacement - predicted_paralyzed_displacement;
+    % 
+    %         Nfft = 10000;
+    %         residuals_zero = residuals - mean(residuals);
+    %         [Prr,f] = pwelch(residuals_zero,Nfft,[],Nfft,Fs);
+    % 
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         sgtitle('Residuals between Predicted Healthy Displacement, Pos_H(t), and Predicted Paralyzed Displacement, Pos_P(t)','Fontsize',14)
+    % 
+    %         subplot(2,2,[1 2])
+    %         plot(t_total(1,1:end-3998),residuals(1000:end-1000,:))
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(a) Residuals','Fontsize',16)
+    %         ylabel('Displacement (m)','Fontsize',16)
+    %         xlabel('Time (s)','Fontsize',16)
+    %         grid on
+    % 
+    %         subplot(2,2,3)
+    %         histogram(residuals(1000:end-1000,:))
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(b) Residual Distribution','Fontsize',16)
+    %         xlabel('Displacement (m)','Fontsize',16)
+    %         ylabel('Density','Fontsize',16)
+    %         grid on
+    % 
+    %         subplot(2,2,4)
+    %         semilogy(f(1:200,:),Prr(1:200,:))
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(c) Spectrum of Residuals','Fontsize',16)
+    %         ylabel('PSD (log)','Fontsize',16);
+    %         xlabel('Frequency (Hz)','Fontsize',16);
+    %         grid on;
+    % 
+    %         %Spectrum of Predicted Healthy Displacement and Predicted Paralyzed
+    %         %Displacement
+    %         predicted_healthy_displacement_zero = predicted_healthy_displacement - mean(predicted_healthy_displacement);
+    %         predicted_paralyzed_displacement_zero = predicted_paralyzed_displacement - mean(predicted_paralyzed_displacement);
+    % 
+    %         Nfft = 10000;
+    %         [Pxx,~] = pwelch(predicted_healthy_displacement_zero,Nfft,[],Nfft,Fs);
+    %         [Pyy,f] = pwelch(predicted_paralyzed_displacement_zero,Nfft,[],Nfft,Fs);
+    % 
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         subplot(2,2,1),plot(t_total(1,1:end-1999),predicted_healthy_displacement)
+    %         title('Predicted Healthy Displacement, Pos_H(t)','Fontsize',14)
+    %         xlabel('Time (s)','Fontsize',16)
+    %         ylabel('Displacement (m)','Fontsize',16)
+    %         grid on
+    % 
+    %         subplot(2,2,2),plot(t_total(1,1:end-1999),predicted_paralyzed_displacement)
+    %         title('Predicted Paralyzed Displacement, Pos_P(t)','Fontsize',14)
+    %         xlabel('Time (s)','Fontsize',16)
+    %         ylabel('Displacement (m)','Fontsize',16)
+    %         grid on
+    % 
+    %         subplot(2,2,3),semilogy(f(1:200,:),Pxx(1:200,:));
+    %         title('Predicted Healthy Displacement Spectrum','Fontsize',14);
+    %         ylabel('PSD (log scale)','Fontsize',16);
+    %         xlabel('Frequency (Hz)','Fontsize',16);
+    %         grid on;
+    % 
+    %         subplot(2,2,4),semilogy(f(1:200,:),Pyy(1:200,:));
+    %         title('Predicted Paralyzed Displacement Spectrum','Fontsize',14);
+    %         ylabel('PSD','Fontsize',16);
+    %         xlabel('Frequency (Hz)','Fontsize',16);
+    %         grid on;
+    % 
+    %         %Auto-Correlation and Cross Correlation of Predicted Healthy Displacement
+    %         %and Predicted Paralyzed Displacement
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         sgtitle('Correlation of Predicted Healthy Displacement, Pos_H(t), and Predicted Paralyzed Displacement, Pos_P(t)','Fontsize',14)
+    % 
+    %         maxlag = floor(length(predicted_healthy_displacement_zero)*0.05);
+    %         [Rxx,lags] = xcorr(predicted_healthy_displacement_zero,maxlag,'coeff');
+    %         lags = lags/Fs;
+    %         subplot(3,1,1),plot(lags,Rxx)
+    %         title('(a) Auto-Correlation of Predicted Healthy Displacement','Fontsize',16)
+    %         ylabel('Correlation','Fontsize',16)
+    %         grid on
+    % 
+    %         [Ryy,lags] = xcorr(predicted_paralyzed_displacement_zero,maxlag,'coeff');
+    %         lags = lags/Fs;
+    %         subplot(3,1,2),plot(lags,Ryy)
+    %         title('(b) Auto-Correlation of Predicted Paralyzed Displacement','Fontsize',16)
+    %         ylabel('Correlation','Fontsize',16)
+    %         grid on
+    % 
+    %         [Rxy,lags] = xcorr(predicted_paralyzed_displacement_zero,predicted_healthy_displacement_zero,maxlag,'coeff');
+    %         lags = lags/Fs;
+    %         subplot(3,1,3),plot(lags,Rxy)
+    %         title('(c) Cross-Correlation','Fontsize',16)
+    %         xlabel('Time (s)','Fontsize',16)
+    %         ylabel('Correlation','Fontsize',16)
+    %         grid on
+    % 
+    %         % Frequency Response between Predicted Healthy Side Displacement and
+    %         % Predicted Paralyzed Displacement
+    %         %Transfer Function
+    %         Nfft = 2000;
+    %         txy = tfestimate(predicted_healthy_displacement,predicted_paralyzed_displacement,Nfft,[],Nfft,Fs);
+    %         G = abs(txy);
+    %         G = 20*log10(G);
+    %         P = angle(txy);
+    %         P = P*(180/pi);
+    %         [Cxy, f] = mscohere(predicted_healthy_displacement,predicted_paralyzed_displacement,Nfft,[],Nfft,Fs);
+    % 
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         sgtitle('Frequency Response of Predicted Healthy Displacement, Pos_H(t), and Predicted Paralyzed Displacement, Pos_P(t)','Fontsize',14)
+    % 
+    %         subplot(3,1,1),plot(f(1:20,:),G(1:20,:));
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(a) Gain','Fontsize',16);
+    %         ylabel('Gain (dB)','Fontsize',16);
+    %         grid on;
+    % 
+    %         subplot(3,1,2),plot(f(1:20,:),P(1:20,:));
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(b) Phase Shift','Fontsize',16);
+    %         ylabel('Phase (degrees)','Fontsize',16);
+    %         grid on;
+    % 
+    %         subplot(3,1,3),plot(f(1:20,:),Cxy(1:20,:));
+    %         ax = gca;
+    %         ax.FontSize = 14;
+    %         title('(c) Coherence','Fontsize',16);
+    %         ylabel('Coherence','Fontsize',16);
+    %         xlabel('Frequency (Hz)','Fontsize',16);
+    %         grid on;
+    % 
+    %         figure(figNum)
+    %         figNum = figNum+1;
+    %         plot(f(1:20,:),Cxy(1:20,:));
+    %         ax = gca;
+    %         ax.FontSize = 16;
+    %         title('Coherence between Pos_H(t) and Pos_P(t)','Fontsize',20);
+    %         ylabel('Coherence','Fontsize',20);
+    %         xlabel('Frequency (Hz)','Fontsize',20);
+    %         grid on;
+    % 
+    %     end
+
+    end
+    
+end
+
+%% Plot
+figNum = 408;
+
+FRCS_validation_accuracy_mean = [];
+FRCS_validation_accuracy_std = [];
+
+%Mean and Standard Deviation of Inverse SRS Validation Accuracy
+FRCS_validation_accuracy = max(0, FRCS_validation_accuracy);
+FRCS_validation_accuracy_mean = mean(FRCS_validation_accuracy,1);
+FRCS_validation_accuracy_std = std(FRCS_validation_accuracy,0,1);
+
+%disp(['Validation Accuracy Mean: ' num2str(round(validation_accuracy_mean,1)) '%'])
+%disp(['Validation Accuracy Std: ' num2str(round(validation_accuracy_std,1)) '%'])
+
+figure(figNum)
+figNum = figNum+1;
+hold on
+%plot(noise_snr_all_clean(2,:),accuracy_validation_mean(:,:,2),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),FRCS_validation_accuracy_mean(1,:),'LineWidth',3);
+
+%plot(noise_snr_all_clean(2,:),min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100),'LineStyle','none','LineWidth',2)
+%plot(noise_snr_all_clean(2,:),max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0),'LineStyle','none','LineWidth',2)
+%patch([noise_snr_all_clean(2,:) fliplr(noise_snr_all_clean(2,:))], [min(accuracy_validation_mean(:,:,2)+accuracy_validation_std(:,:,2),100) fliplr(max(accuracy_validation_mean(:,:,2)-accuracy_validation_std(:,:,2),0))], 'b','FaceAlpha',0.2)
+
+plot(SRS_noise_snr_all_clean(1,:),min(FRCS_validation_accuracy_mean(1,:)+FRCS_validation_accuracy_std(1,:),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(FRCS_validation_accuracy_mean(1,:)-FRCS_validation_accuracy_std(1,:),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(FRCS_validation_accuracy_mean(1,:)+FRCS_validation_accuracy_std(1,:),100) fliplr(max(FRCS_validation_accuracy_mean(1,:)-FRCS_validation_accuracy_std(1,:),0))], 'b','FaceAlpha',0.2)
+hold off
+ax = gca;
+ax.FontSize = 15;
+title('FRCS Accuracy vs Output Noise','Fontsize',24);
+%legend('PRBS','Physiological','Location','southeast','FontSize',18)
+ylabel('Accuracy (% VAF)','Fontsize',18); 
+xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
+grid on
+
+%% Plot all
+figNum = 410;
+
+figure(figNum)
+figNum = figNum+1;
+hold on
+plot(ERS_noise_snr_all_clean(1,:),ERS_accuracy_validation_mean(:,:,1),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),SRS_accuracy_validation_mean(:,:,1),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),inverse_SRS_validation_accuracy_mean(1,:),'LineWidth',3);
+plot(SRS_noise_snr_all_clean(1,:),FRCS_validation_accuracy_mean(1,:),'LineWidth',3);
+
+plot(ERS_noise_snr_all_clean(1,:),min(ERS_accuracy_validation_mean(:,:,1)+ERS_accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
+plot(ERS_noise_snr_all_clean(1,:),max(ERS_accuracy_validation_mean(:,:,1)-ERS_accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
+patch([ERS_noise_snr_all_clean(1,:) fliplr(ERS_noise_snr_all_clean(1,:))], [min(ERS_accuracy_validation_mean(:,:,1)+ERS_accuracy_validation_std(:,:,1),100) fliplr(max(ERS_accuracy_validation_mean(:,:,1)-ERS_accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
+
+plot(SRS_noise_snr_all_clean(1,:),min(SRS_accuracy_validation_mean(:,:,1)+SRS_accuracy_validation_std(:,:,1),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(SRS_accuracy_validation_mean(:,:,1)-SRS_accuracy_validation_std(:,:,1),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(SRS_accuracy_validation_mean(:,:,1)+SRS_accuracy_validation_std(:,:,1),100) fliplr(max(SRS_accuracy_validation_mean(:,:,1)-SRS_accuracy_validation_std(:,:,1),0))], 'y','FaceAlpha',0.2)
+
+plot(SRS_noise_snr_all_clean(1,:),min(inverse_SRS_validation_accuracy_mean(1,:)+inverse_SRS_validation_accuracy_std(1,:),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(inverse_SRS_validation_accuracy_mean(1,:)-inverse_SRS_validation_accuracy_std(1,:),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(inverse_SRS_validation_accuracy_mean(1,:)+inverse_SRS_validation_accuracy_std(1,:),100) fliplr(max(inverse_SRS_validation_accuracy_mean(1,:)-inverse_SRS_validation_accuracy_std(1,:),0))], 'b','FaceAlpha',0.2)
+
+plot(SRS_noise_snr_all_clean(1,:),min(FRCS_validation_accuracy_mean(1,:)+FRCS_validation_accuracy_std(1,:),100),'LineStyle','none','LineWidth',2)
+plot(SRS_noise_snr_all_clean(1,:),max(FRCS_validation_accuracy_mean(1,:)-FRCS_validation_accuracy_std(1,:),0),'LineStyle','none','LineWidth',2)
+patch([SRS_noise_snr_all_clean(1,:) fliplr(SRS_noise_snr_all_clean(1,:))], [min(FRCS_validation_accuracy_mean(1,:)+FRCS_validation_accuracy_std(1,:),100) fliplr(max(FRCS_validation_accuracy_mean(1,:)-FRCS_validation_accuracy_std(1,:),0))], 'b','FaceAlpha',0.2)
+hold off
+ax = gca;
+ax.FontSize = 15;
+title('FRCS Accuracy vs Output Noise','Fontsize',24);
+legend('ERS','SRS','Inverse SRS','FRCS','Location','southeast','FontSize',18)
+ylabel('Accuracy (% VAF)','Fontsize',18); 
+xlabel('Signal to Noise Ratio (dB)','Fontsize',18);
+grid on
 
 tEnd = toc(tStart)/60
